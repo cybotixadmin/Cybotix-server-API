@@ -1,8 +1,0 @@
-{
-    "kty": "RSA",
-    "e": "AQAB",
-    "use": "sig",
-    "kid": "sig-2023-08-26T16:39:06Z",
-    "alg": "RS256",
-    "n": "sAyn1bwu6xZXPgib1IPQIGbhX0O_-oUBKoBxu604yXbWeTO_Y_6DuixNKN2ReAIAsd4ljtrSTUmRnid3nkzhb1_Pbdja39b9QS4aUDAqUjtWurs-uuflm5k6Itv1a0542KY5Qa9PReDegFgd_j5F9WtPWSzUOQOxfcvediyFKXSnUHkS5TYj8fyKhZEsGygSNrIRxaHTgbk5CjyGtotR5_vHBxLDdiRogAQCCa9q8iZwwPyMhxRTwkEXwGN4FyCrJT76q7e2CqwPYfn7FlsDGsbVWiTOo7c6MsssqrQS-yWMpb9yV-872k7BS4IRlDXMDlXVweLNIIDMrsKMpjQYKQ"
-}
