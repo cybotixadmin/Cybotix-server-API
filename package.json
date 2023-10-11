@@ -1,0 +1,31 @@
+{
+  "name": "nodeeclipsetutorial",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node --trace-deprecation app.js"
+  },
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "aws-sdk": "latest",
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "ejs": "^3.1.6",
+    "express": "^3.21.2",
+    "express-fileupload": "^1.2.1",
+    "express-session": "^1.17.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql": "^2.18.1",
+    "njwt": "^2.0.0",
+    "pem-jwk": "^2.0.0",
+    "req-flash": "0.0.3",
+    "secure-random": "^1.1.2",
+    "sqlite3": "^5.1.6"
+  },
+  "main": "app.js",
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
