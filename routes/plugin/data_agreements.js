@@ -1,28 +1,10 @@
-const sqlite3 = require('sqlite3').verbose();
+
 const Ajv = require('ajv');
+const crypto = require('crypto');
 
+module.exports = function (app, connection) {
 
-module.exports = function (app) {
-
-    
-// Initialize SQLite database
-let all_data_agreements_db = new sqlite3.Database('./all_data_agreements.db', (err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log('Connected to the SQLite database.');
-  });
   
-// Create data_agreements table if it doesn't exist
-const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreements (
-    _id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userid TEXT, browser_id TEXT, createtime TEXT, lastmodifiedtime TEXT, uuid TEXT, expire_time TEXT, json BLOB );`;
-  
-    all_data_agreements_db.run(create_data_agreements_Table, [], (err) => {
-  if (err) {
-  console.error(err.message);
-  }
-  });
 
     // JSON Schema
 
@@ -31,7 +13,7 @@ const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreem
     const plugin_user_add_data_agreement_json_schema = {
         type: "object",
         properties: {
-          agreement_id: { type: 'string',
+          counterparty_id: { type: 'string',
           "minLength": 0,
           "maxLength": 300 },
           userid: { type: 'string',
@@ -42,13 +24,13 @@ const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreem
         "minLength": 4,
         "maxLength": 60  }
           },
-          required: ['browser_id','userid'],
+          required: ['counterparty_id'],
       };
       
       const plugin_user_validate_data_agreement_json_schema = {
         type: "object",
         properties: {
-          agreement_id: { type: 'string',
+          counterparty_id: { type: 'string',
           "minLength": 0,
           "maxLength": 300 },
           userid: { type: 'string',
@@ -59,7 +41,7 @@ const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreem
         "minLength": 4,
         "maxLength": 60  }
           },
-          required: ['browser_id','userid'],
+          required: ['counterparty_id'],
       };
       
       
@@ -101,15 +83,46 @@ const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreem
       const ajv = new Ajv();
       
 
+      /**
+       * {
+ "createtime":"2023-08-28T20:49:41.725Z",
+"lastmodifiedtime":"2023-08-29T20:49:41.725Z",
+"principal_name" : "2342",
+"principal_id":"2342",
+"counterparty_name" :"Web Shop Inc.",
+ "counterparty_id":"65232",
+"data_grants" : [
+{"one": "two"} ,
+{"one":"two"}
+]
+}
+       * 
+       */
+
       app.post('/plugin_user_add_data_agreement', (req, res) => {
         // Validate JSON against schema
-       //const valid = ajv.validate(plugin_user_add_data_agreement_json_schema, req.body);
-       const valid = true;
+       const valid = ajv.validate(plugin_user_add_data_agreement_json_schema, req.body);
+       //const valid = true;
        if (!valid) {
          return res.status(400).json({ error: 'Invalid data format' });
        }
-       
-       // Insert into SQLite database
+       var installationUniqueId = "";
+       try {
+     
+         const regExpObj = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
+     
+           if (regExpObj.test(req.header("installationUniqueId"))) {
+             installationUniqueId = req.header("installationUniqueId");
+             console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
+         } else {
+               console.log("an invalid installationUniqueId found in header");
+     
+           }
+     
+       } catch (err) {
+           console.log(err);
+     
+       }
        console.log("adding agreement");
        console.log(JSON.stringify(req.body.agreement_json));
        
@@ -117,21 +130,46 @@ const create_data_agreements_Table = `CREATE TABLE IF NOT EXISTS all_data_agreem
        
          const uuid = crypto.randomUUID()
        
-         var json = req.body.agreement_json;
-         json.uuid = uuid;
+         var data_grants = req.body.data_grants;
+         console.debug(data_grants)
+         console.debug(JSON.stringify(data_grants))
+
+         //json.uuid = uuid;
          
-       const sql = 'INSERT INTO all_data_agreements ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
+const json = '{"data_grants":'+JSON.stringify(data_grants) + '}';
+console.debug(json);
+//       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
        const utc = new Date().toISOString();
-       const values = [req.body.browser_id ,uuid , req.body.agreement_json.createtime , utc  , JSON.stringify(json)];
-       console.log(values);
+       //const values = [req.body.browser_id ,uuid , req.body.agreement_json.createtime , utc  , JSON.stringify(json)];
+       //console.log(values);
+  
+       const sql = 'INSERT INTO CybotixDB.data_agreements_tb ( browserid, uuid, createtime, lastmodifiedtime, data_grants ) VALUES("'+installationUniqueId+'","'+uuid+'", now(), now(), '+ "'"+json+ "'"+')';
        
-       all_data_agreements_db.run(sql, values, function(err) {
-         if (err) {
-           console.log(err)
-           return res.status(500).json({ error: 'Database error' });
-         }
-         res.status(201).json({ status: 0 });
-       });
+
+       console.log("SQL 2");
+       console.log(sql);
+     
+       connection.query(sql, function (err, result) {
+         //db.all(sql, values, (err, rows) => {
+             if (err) {
+               console.debug(err);
+                 return res.status(500).json({
+                     error: 'Database error'
+                 });
+             }
+             console.log(result);
+             console.log(result.affectedRows);
+     //console.log("1---"+JSON.parse(result));
+     //console.log("2---"+JSON.stringify(result));
+     
+     
+             if (result.affectedRows > 0) {
+                 console.log("affectedRows: " + result.affectedRows)
+                 res.status(200).json('{"added:"'+result.affectedRows+"}");
+             } else {
+                 res.status(404).json({});
+             }
+         });
        });
     
       
@@ -178,9 +216,9 @@ app.post('/plugin_user_validate_data_agreement', (req, res) => {
     return res.status(400).json({ error: 'Invalid data format' });
   }
   
-  // delete from SQLite database
-  const sql = 'DELETE FROM all_data_agreements WHERE browser_id=? AND uuid=? ';
-  
+   // delete from database
+   const sql = 'DELETE FROM CybotixDB.data_agreements WHERE browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
+
   
   const values = [req.body.browser_id ,req.body.uuid];
   console.log(sql);

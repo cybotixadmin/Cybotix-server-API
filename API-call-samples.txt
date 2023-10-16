@@ -1,0 +1,93 @@
+
+
+
+
+
+cd "/cygdrive/c/users/lars_/Documents/my_corporate/AddScape/development/server API/V0.5/src"
+npm init -y
+
+npm install express sqlite3 ajv cors
+
+JSON in database
+https://www.beekeeperstudio.io/blog/sqlite-json
+
+
+curl -X POST -H "Content-Type: application/json" -d '{"content":"Hello, World!"}' http://localhost:3000/message
+
+# post clickstream data to Cybotix
+
+curl -X POST -H "Host: localhost:3000" -H ": dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Origin: chrome-extension://dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Content-Type: application/json" -d '{"content":"Hello, World!", "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg","url":"http://test2/click","localtime":"2023-08-21 13:47:32"}' http://localhost:3000/plugin_user_post_click
+
+# user using browser app to get clickstream data
+
+
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: dmogejgjgpkaakblccgojkkdofkcjkcg" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":""}' http://localhost:3000/plugin_user_get_all_clicks
+
+# user using browser app delete clickstream data item
+
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "id":"5"}' http://localhost:3000/plugin_user_delete_click
+
+#
+curl -X OPTIONS -H "Content-Type: application/json"  http://localhost:3000/plugin_user_post_click
+
+
+
+# JSON schema syntax
+https://json-schema.org/understanding-json-schema/reference/string.html#length
+
+to get UTC timestamp use 
+new Date().toISOString()
+
+#
+
+curl -H "Origin: http://example.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: X-Requested-With"  -X OPTIONS --verbose http://localhost:3000/message
+
+#
+
+# call to add data agreement
+
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"mhoppoobobddnonppblechkphekniflb", "userid":"", "agreement_json":{"createtime":"2023-08-28T20:49:41.725Z","lastmodifiedtime":"2023-08-29T20:49:41.725Z","owner_id":"2342","counterparty_name":"Web Shop Inc.","counterparty_id":"65232","scope":{"one":"two"}}}' http://localhost:3000/plugin_user_add_data_agreement
+
+
+return data
+{"agreement_id":"5"}
+
+
+
+# call to delete data agreement
+
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"mhoppoobobddnonppblechkphekniflb", "userid":"","uuid":"7"}' http://localhost:3000/plugin_user_delete_data_agreement
+
+
+# call to read data agreement 
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_read_agreement
+
+
+# call to read all data agreements
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":""}' http://localhost:3000/plugin_user_read_all_agreements
+
+
+
+# call to check validity of data agreement ID
+
+curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_validate_agreement
+
+
+
+# call to create platform token from a PEM-formated private key
+
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'privatekey_pem=-----BEGIN+PRIVATE+KEY-----%0D%0AMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCwDKfVvC7rFlc%2B%0D%0ACJvUg9AgZuFfQ7%2F6hQEqgHG7rTjJdtZ5M79j%2FoO6LE0o3ZF4AgCx3iWO2tJNSZGe%0D%0AJ3eeTOFvX89t2Nrf1v1BLhpQMCpSO1a6uz665%2BWbmToi2%2FVrTnjYpjlBr09F4N6A%0D%0AWB3%2BPkX1a09ZLNQ5A7F9y952LIUpdKdQeRLlNiPx%2FIqFkSwbKBI2shHFodOBuTkK%0D%0APIa2i1Hn%2B8cHEsN2JGiABAIJr2ryJnDA%2FIyHFFPCQRfAY3gXIKslPvqrt7YKrA9h%0D%0A%2BfsWWwMaxtVaJM6jtzoyyyyqtBL7JYylv3JX7zvaTsFLghGUNcwOVdXB4s0ggMyu%0D%0AwoymNBgpAgMBAAECggEANu8cCAO6mDzWaFMDXSLsdM%2Flj3Zyl1edb4e49Zkt2R%2Bt%0D%0A%2BQ%2F%2BrtMig5uDUDcjR1FIqjfpfFQnv1oviCxElS7kQX6iGWLLmYFacVZTe6Yr7pD5%0D%0AlTcMcgIekZkUnQAJ6rwH1YK45xgvIlzy0RWt9kG0Tsp3bhog9tGCNwDAoBtwSejJ%0D%0A6aIirPOXsxTEPLL1ZV%2FzLZ2NGWKGctgULGZwEEcXvLDR33Ejsf7eLVU0H5cl%2FbiD%0D%0AsG3wjPzbPeZWqewcmm6AfAu5B6o1oI%2B8wpz%2FNylBtFdmOPcJEnMycZXNVGyQnfu5%0D%0AnbthqGuhYgVbZymht41QhlLcZttCfp9Sll22WxdViQKBgQDjLL8MFFVI8%2FQwAQA6%0D%0ApdP1LOevEqfh86CwONiqbsfAR0DziBE%2BAqSmFWn%2Ff7tunrsrvzwA7oymmvQkH0cx%0D%0Aw56XnKVxGTIpltnndyHI5TPv6Nks%2FZHpW978l24zgy1vZ%2B2%2FCFHC94pJ7axOtQ%2BI%0D%0AX6ngZcZ%2Bxx8pZxuq6akRfg8ViwKBgQDGYzgVGSfmwElOqDp9iMpN%2FYnbagyZFVZc%0D%0Av1S7hf2aiyqOys3oDnGpYJHUaVB58vJGUmzJDJuAp2S6viSuMlIYNWZ5YZwKWiqR%0D%0ApJHR8vSj6XvCPrbfdBstcsz509rMmnMFGl%2B%2FTWZ%2F784Rls9cZltMYTAkKJxQp2vG%0D%0AymDm1FnHmwKBgCtv29vAa4o2cyNWnaeZG40OmAImrAkNH1VymSMFaZY%2FSZEHHFzh%0D%0A%2Fn9vKsRatQjyutEjkKKQ%2Bj3E9RePD3rZb5KHti6I5cmD%2BYhDhCc4hBTETfpHRcX7%0D%0A9ggQIFcjJuXdVl0nhxKjaEK4ejDWd%2FDYcc%2FhRfHpuvCcsXKdmOEqXFH%2FAoGBAJWe%0D%0A8QYggdJrRR54jBxvVTx6skTz92phCFBM0MfZJ0ouGTu2QpL4icqXlYRgpRxEGWrl%0D%0A8Tu0MXdXSAX7L8jdFMNDSvTSpA%2B%2BrwpG1t9D4DPa%2FMaj6%2BIdO%2F4L7gGhQQw8k%2FDO%0D%0AUlYCNwLYRk9HsT5byBGT3u32XuYJTqSPr4OHtepvAoGBALNJBKmvZX86NJuTXjG1%0D%0ABD8JBIiiRSyvmUqsY%2BJEbv2cL5ZlvkRba%2FA%2F730UhwrrPnHdfXGqtMbmZ6Qg7%2FOB%0D%0AiwwOsr29th5AD7S5KxpLMLVe%2BCa8gRh%2Buuk%2BBegiq8i4fRa%2Bsnq2EWwNPr8Fq0Gb%0D%0AIlqTmDYitLueMX9WZwdOeww9%0D%0A-----END+PRIVATE+KEY-----%0D%0A&publickey_pem=-----BEGIN+PUBLIC+KEY-----%0D%0AMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsAyn1bwu6xZXPgib1IPQ%0D%0AIGbhX0O%2F%2BoUBKoBxu604yXbWeTO%2FY%2F6DuixNKN2ReAIAsd4ljtrSTUmRnid3nkzh%0D%0Ab1%2FPbdja39b9QS4aUDAqUjtWurs%2Buuflm5k6Itv1a0542KY5Qa9PReDegFgd%2Fj5F%0D%0A9WtPWSzUOQOxfcvediyFKXSnUHkS5TYj8fyKhZEsGygSNrIRxaHTgbk5CjyGtotR%0D%0A5%2FvHBxLDdiRogAQCCa9q8iZwwPyMhxRTwkEXwGN4FyCrJT76q7e2CqwPYfn7FlsD%0D%0AGsbVWiTOo7c6MsssqrQS%2ByWMpb9yV%2B872k7BS4IRlDXMDlXVweLNIIDMrsKMpjQY%0D%0AKQIDAQAB%0D%0A-----END+PUBLIC+KEY-----%0D%0A&submit01=submit'  http://localhost:3000/generate_platform_token_from_key
+
+
+
+# call to create data request token 
+
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d 'platform_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEuMC4wIn0.eyJwbGF0Zm9ybV9jbGllbnQiOiJleUpoYkdjaU9pSlNVekkxTmlJc0luUjVjQ0k2SWtwWFZDSXNJbXRwWkNJNkluTmxiR1lpZlEuZXlKcGMzTWlPaUpvZEhSd2N6b3ZMMkZ3YVM1amIyMGlMQ0p6ZFdJaU9pSmhibTl1ZVcxdmRYTWlMQ0p6WTI5d1pTSTZJbVp5WldWVmMyVnlJaXdpWm1GMmIzSnBkR1ZEYjJ4dmNpSTZJbUpzWVdOcklpd2lhMlY1SWpvaUxTMHRMUzFDUlVkSlRpQlFWVUpNU1VNZ1MwVlpMUzB0TFMxY2NseHVUVWxKUWtscVFVNUNaMnR4YUd0cFJ6bDNNRUpCVVVWR1FVRlBRMEZST0VGTlNVbENRMmRMUTBGUlJVRnpRWGx1TVdKM2RUWjRXbGhRWjJsaU1VbFFVVnh5WEc1SlIySm9XREJQTHl0dlZVSkxiMEo0ZFRZd05IbFlZbGRsVkU4dldTODJSSFZwZUU1TFRqSlNaVUZKUVhOa05HeHFkSEpUVkZWdFVtNXBaRE51YTNwb1hISmNibUl4TDFCaVpHcGhNemxpT1ZGVE5HRlZSRUZ4VldwMFYzVnljeXQxZFdac2JUVnJOa2wwZGpGaE1EVTBNa3RaTlZGaE9WQlNaVVJsWjBablpDOXFOVVpjY2x4dU9WZDBVRmRUZWxWUFVVOTRabU4yWldScGVVWkxXRk51VlVoclV6VlVXV280Wm5sTGFGcEZjMGQ1WjFOT2NrbFNlR0ZJVkdkaWF6VkRhbmxIZEc5MFVseHlYRzQxTDNaSVFuaE1SR1JwVW05blFWRkRRMkU1Y1RocFduZDNVSGxOYUhoU1ZIZHJSVmgzUjA0MFJubERja3BVTnpaeE4yVXlRM0YzVUZsbWJqZEdiSE5FWEhKY2JrZHpZbFpYYVZSUGJ6ZGpOazF6YzNOeGNsRlRLM2xYVFhCaU9YbFdLemczTW1zM1FsTTBTVkpzUkZoTlJHeFlWbmRsVEU1SlNVUk5jbk5MVFhCcVVWbGNjbHh1UzFGSlJFRlJRVUpjY2x4dUxTMHRMUzFGVGtRZ1VGVkNURWxESUV0RldTMHRMUzB0WEhKY2JpSXNJbWxoZENJNk1UWTVNemMzTWpjeU1YMC5KUUFCa0Yya1RWR3RtYVV1alpVY1lvSVVkRFpoby0wUWxMNFh1OTNCTDI0UzVhUFNyaENTeGo4U2tlempOcmQ5QVNDelluNUNCMmZGcGt0NU1xTWo0bkxKRHpUVlBHYThmS3VlU3ZfSVo3YVhrdHYtNy1ocTVJd1Qyd1JCSFVRb1psSUxiR1FSMUlDSzV3ZFdzX2d3cWVMMkZ5Sm1HZ0t2dzVKTmlnTmxxb016LVNwYWRSMHRUdXVaMy1CSDFjT1BuMTZUbl9PTzFkeURpd1NVNEJjeHNGV2RqQnltejBLVnFVWGJKOF9Bb3F3N1o2endDTzVYVThZREx4SVNWNEhhemtMYl83NlktWEstRERyNlliOExfQmZrTEMyX2N1dThMV1JOVGhUTGg5UTAyd2tqUTNwaEFIMjBVVUh6NjRhZHVyN0V5UmNYVEh2T0dYN08zSHRkV3ciLCJleHBpcmF0aW9uIjoiMjAyMy0xMC0wMVQyMDoyNToyMS4xOTlaIiwiaWF0IjoxNjkzNzcyNzIxfQ.svSEVemBNaSzLRttSK19S7eRwsRkwUhsPjQl0XCk9bp-Ox_Fhf2PUieoHyAcxQPcZPSpbFpfIl6VufrSRHDZJw&data_request_json=%7B%22one%22%3A%22two%22%2C%22validity%22%3A%7B%22notafter%22%3A%222023-10-15T22%3A08%3A34.570Z%22%7D%7D&privatekey_pem=-----BEGIN+PRIVATE+KEY-----%0D%0AMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCwDKfVvC7rFlc%2B%0D%0ACJvUg9AgZuFfQ7%2F6hQEqgHG7rTjJdtZ5M79j%2FoO6LE0o3ZF4AgCx3iWO2tJNSZGe%0D%0AJ3eeTOFvX89t2Nrf1v1BLhpQMCpSO1a6uz665%2BWbmToi2%2FVrTnjYpjlBr09F4N6A%0D%0AWB3%2BPkX1a09ZLNQ5A7F9y952LIUpdKdQeRLlNiPx%2FIqFkSwbKBI2shHFodOBuTkK%0D%0APIa2i1Hn%2B8cHEsN2JGiABAIJr2ryJnDA%2FIyHFFPCQRfAY3gXIKslPvqrt7YKrA9h%0D%0A%2BfsWWwMaxtVaJM6jtzoyyyyqtBL7JYylv3JX7zvaTsFLghGUNcwOVdXB4s0ggMyu%0D%0AwoymNBgpAgMBAAECggEANu8cCAO6mDzWaFMDXSLsdM%2Flj3Zyl1edb4e49Zkt2R%2Bt%0D%0A%2BQ%2F%2BrtMig5uDUDcjR1FIqjfpfFQnv1oviCxElS7kQX6iGWLLmYFacVZTe6Yr7pD5%0D%0AlTcMcgIekZkUnQAJ6rwH1YK45xgvIlzy0RWt9kG0Tsp3bhog9tGCNwDAoBtwSejJ%0D%0A6aIirPOXsxTEPLL1ZV%2FzLZ2NGWKGctgULGZwEEcXvLDR33Ejsf7eLVU0H5cl%2FbiD%0D%0AsG3wjPzbPeZWqewcmm6AfAu5B6o1oI%2B8wpz%2FNylBtFdmOPcJEnMycZXNVGyQnfu5%0D%0AnbthqGuhYgVbZymht41QhlLcZttCfp9Sll22WxdViQKBgQDjLL8MFFVI8%2FQwAQA6%0D%0ApdP1LOevEqfh86CwONiqbsfAR0DziBE%2BAqSmFWn%2Ff7tunrsrvzwA7oymmvQkH0cx%0D%0Aw56XnKVxGTIpltnndyHI5TPv6Nks%2FZHpW978l24zgy1vZ%2B2%2FCFHC94pJ7axOtQ%2BI%0D%0AX6ngZcZ%2Bxx8pZxuq6akRfg8ViwKBgQDGYzgVGSfmwElOqDp9iMpN%2FYnbagyZFVZc%0D%0Av1S7hf2aiyqOys3oDnGpYJHUaVB58vJGUmzJDJuAp2S6viSuMlIYNWZ5YZwKWiqR%0D%0ApJHR8vSj6XvCPrbfdBstcsz509rMmnMFGl%2B%2FTWZ%2F784Rls9cZltMYTAkKJxQp2vG%0D%0AymDm1FnHmwKBgCtv29vAa4o2cyNWnaeZG40OmAImrAkNH1VymSMFaZY%2FSZEHHFzh%0D%0A%2Fn9vKsRatQjyutEjkKKQ%2Bj3E9RePD3rZb5KHti6I5cmD%2BYhDhCc4hBTETfpHRcX7%0D%0A9ggQIFcjJuXdVl0nhxKjaEK4ejDWd%2FDYcc%2FhRfHpuvCcsXKdmOEqXFH%2FAoGBAJWe%0D%0A8QYggdJrRR54jBxvVTx6skTz92phCFBM0MfZJ0ouGTu2QpL4icqXlYRgpRxEGWrl%0D%0A8Tu0MXdXSAX7L8jdFMNDSvTSpA%2B%2BrwpG1t9D4DPa%2FMaj6%2BIdO%2F4L7gGhQQw8k%2FDO%0D%0AUlYCNwLYRk9HsT5byBGT3u32XuYJTqSPr4OHtepvAoGBALNJBKmvZX86NJuTXjG1%0D%0ABD8JBIiiRSyvmUqsY%2BJEbv2cL5ZlvkRba%2FA%2F730UhwrrPnHdfXGqtMbmZ6Qg7%2FOB%0D%0AiwwOsr29th5AD7S5KxpLMLVe%2BCa8gRh%2Buuk%2BBegiq8i4fRa%2Bsnq2EWwNPr8Fq0Gb%0D%0AIlqTmDYitLueMX9WZwdOeww9%0D%0A-----END+PRIVATE+KEY-----&submit01=submit'  http://localhost:3000/generate_data_request_token_from_json
+
+
+

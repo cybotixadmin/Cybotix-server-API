@@ -17,8 +17,13 @@ const app = express();
 var cors = require('cors')
 const crypto = require('crypto');
 app.use(cors())
+try{
 app.use(express.json());
 app.use(express.bodyParser());
+}catch(e){
+  console.log(e);
+}
+
 
 app.options('/products/:id', cors(), function (req, res, next) {
     console.log(req.method);
@@ -33,7 +38,7 @@ app.delete('/products/:id', cors(), function (req, res, next) {
 });
 
 var connection = mysql.createConnection({
-  host: "localhost",
+  host: "myrdsinstance.c4fxi8hjddcq.eu-west-1.rds.amazonaws.com",
   port: "3306",
   user: "sqluser",
   password: "password"

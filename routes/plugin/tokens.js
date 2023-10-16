@@ -3,36 +3,17 @@ const Ajv = require('ajv');
 const fs = require('fs');
 const jsonwebtoken = require('jsonwebtoken');
 const jsonwebtoken2 = require('jsonwebtoken');
+const crypto = require('crypto');
 
-module.exports = function (app) {
+module.exports = function (app,connection) {
 
  /**
   * package of functions to generate and validate tokens for the Cybotix platform
   */   
 
-// Initialize SQLite database
-let db = new sqlite3.Database('./mydatabase.db', (err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log('Connected to the SQLite database.');
-  });
-  
-  
-  
-  
-  
-  // Create table if it doesn't exist
-  const createTable = `CREATE TABLE IF NOT EXISTS messages (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        userid TEXT, browser_id, localtime, utc ,url TEXT NOT NULL);`;
-  
-  db.run(createTable, [], (err) => {
-    if (err) {
-      console.error(err.message);
-    }
-  });
-  
+ 
+ const regExpObj = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
+
 
 // JSON Schema
 const plugin_user_post_click_json_schema = {
@@ -100,8 +81,52 @@ const plugin_user_post_click_json_schema = {
   const ajv = new Ajv();
   
 
-  
+  app.use((req, res, next) => {
+    console.log(`Received a request on path: ${req.path}`);
+    next(); // Continue to the next middleware/route handler
+});
 
+  app.get('/plugin_user_query_accesstoken_status', (req, res) => {
+    console.log(req.method);
+    console.log(req.path);
+    // check the token against the database
+    console.log(req.query);
+    console.log(req.query.uuid);
+const uuid = req.query.uuid;
+
+var installationUniqueId = "";
+try {
+    if (regExpObj.test(req.header("installationUniqueId"))) {
+      installationUniqueId = req.header("installationUniqueId");
+      console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
+  } else {
+        console.log("an invalid installationUniqueId found in header");
+    }
+} catch (err) {
+    console.log(err);
+}
+
+const sql = 'SELECT status FROM CybotixDB.data_accesstokens_tb WHERE uuid="'+uuid+'"';
+       
+
+console.log("SQL 2");
+console.log(sql);
+connection.query(sql, installationUniqueId ,(err, rows) => {
+  if (err) {
+    return res.status(500).json({ error: 'Database error' });
+  }
+console.log(rows);
+if (rows.length > 0)  {
+  console.log(rows)
+    res.status(200).json(rows);
+  } else {
+    res.status(404).json({ error: 'Message not found' });
+  }
+});
+
+
+
+  });
 
 
 
@@ -761,6 +786,38 @@ const token_page='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><ti
 
 }
 
+
+
+function inserttokenuuid(uuid){
+
+  const sql = 'INSERT INTO CybotixDB.data_accesstoken_tb (createtime, uuid,1) VALUES (now(),"'+uuid + '", 1 )';
+  
+  console.log("SQL 1");
+  console.log(sql);
+
+  connection.query(sql, function (err, result) {
+    //db.all(sql, values, (err, rows) => {
+        if (err) {
+          console.debug(err);
+            return res.status(500).json({
+                error: 'Database error'
+            });
+        }
+//        console.log(result);
+ //       console.log(result.affectedRows);
+//console.log("1---"+JSON.parse(result));
+//console.log("2---"+JSON.stringify(result));
+
+
+        if (result.affectedRows > 0) {
+            console.log("affectedRows: " + result.affectedRows)
+            res.status(200).json('{"added:"'+result.affectedRows+"}");
+        } else {
+            res.status(404).json({});
+        }
+    });
+
+}
 
 
 function decodeBase64(base64String) {

@@ -219,12 +219,12 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
     }
 
     // Read from database
-    const browser_id = [req.body.browser_id];
-    console.log(browser_id);
+    //const browser_id = [req.body.browser_id];
+    //console.log(browser_id);
 //    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
-    const sql = 'SELECT uuid,utc, local_time, url FROM CybotixDB.clickdata_tb WHERE browser_id = "'+browser_id+'" ';
+    const sql = 'SELECT uuid,utc, local_time, url FROM CybotixDB.clickdata_tb WHERE browser_id = "'+installationUniqueId+'" ';
     console.log(sql);
-    connection.query(sql, browser_id, (err, rows) => {
+    connection.query(sql, installationUniqueId, (err, rows) => {
         if (err) {
           return res.status(500).json({ error: 'Database error' });
         }
