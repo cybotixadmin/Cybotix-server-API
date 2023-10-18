@@ -10,5 +10,5 @@ lerna-debug.log*
 .dockerignore
 *.txt
 
-/node_modules/
+node_modules
 
