@@ -12,7 +12,7 @@ module.exports = function (app,connection) {
   */   
 
  
- const regExpObj = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
+ const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
 
 // JSON Schema
@@ -86,27 +86,41 @@ const plugin_user_post_click_json_schema = {
     next(); // Continue to the next middleware/route handler
 });
 
+
+/* check if a token has been revoked
+
+Returns {"status":"not_revoked"} for valid token and 
+{"status":"revoked"} for a revoked token
+If no information found, return "not_revoked"
+
+*/
   app.get('/plugin_user_query_accesstoken_status', (req, res) => {
     console.log(req.method);
     console.log(req.path);
     // check the token against the database
     console.log(req.query);
     console.log(req.query.uuid);
-const uuid = req.query.uuid;
+
 
 var installationUniqueId = "";
 try {
-    if (regExpObj.test(req.header("installationUniqueId"))) {
+    if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
       installationUniqueId = req.header("installationUniqueId");
       console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
-  } else {
-        console.log("an invalid installationUniqueId found in header");
-    }
-} catch (err) {
-    console.log(err);
-}
+ 
 
-const sql = 'SELECT status FROM CybotixDB.data_accesstokens_tb WHERE uuid="'+uuid+'"';
+
+const regExpValidTokenUUID = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
+//const uuid = req.query.uuid;
+var uuid = "";
+try {
+    if (regExpValidTokenUUID.test(req.query.uuid)) {
+      uuid = req.query.uuid;
+      console.log("a valid uuid found in querystring (" +uuid+")");
+ 
+
+
+const sql = 'SELECT activestatus FROM CybotixDB.data_accesstokens_tb WHERE uuid="'+uuid+'"';
        
 
 console.log("SQL 2");
@@ -117,16 +131,93 @@ connection.query(sql, installationUniqueId ,(err, rows) => {
   }
 console.log(rows);
 if (rows.length > 0)  {
-  console.log(rows)
-    res.status(200).json(rows);
-  } else {
-    res.status(404).json({ error: 'Message not found' });
+  
+  if (rows[0].activestatus == "1"){
+console.log("active");
+res.status(200).json({ activestatus: 'not_revoked' });
+  }else{
+console.log("not active");
+res.status(200).json({ activestatus: 'revoked' });
   }
+  } else {
+    console.log("not found");
+    res.status(200).json({ activestatus: 'not_revoked' });
+  }
+
 });
-
-
+} else {
+  console.log("an invalid uuid found in querystring");
+}
+} catch (err) {
+console.log(err);
+}
+} else {
+  console.log("an invalid installationUniqueId found in header");
+}
+} catch (err) {
+console.log(err);
+}
 
   });
+
+
+
+  
+/**
+ * This API is called from the plugin after the user has aither approved a request, or a request has been approved by the user in the past.
+ * 
+ * The access token is a JWT signed by the Cybotix platform. It contains the data access agreement between the user and the plugin.
+ * 
+ * The payload is the data access agreement. it is linked to the platform token by the "jti" field.
+ * It is signed by Cybotix with the Cybotix private key.
+ * 
+ * 
+ */
+
+app.get('/plugin_user_create_access_token', (req, res) => {
+  console.log('/plugin_user_create_access_token');
+
+  var installationUniqueId = "";
+  try {
+
+      if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
+          installationUniqueId = req.header("installationUniqueId");
+          console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+
+          //create the access token based on the request approved by the user (per past agreement)
+          console.log(req.body);
+
+
+          const rawPlatformToken = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
+console.log("rawPlatformToken");
+
+const parts = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/').split('.');
+if (parts.length !== 3) {
+    //throw new Error('Invalid token format');
+    console.log('Invalid token format');
+}
+console.log("parts: " + parts[1 ]);
+const payload_raw = parts[1 ];
+const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
+console.log(payload);
+
+
+
+
+          const rawDataRequest = req.get('X_HTTP_CYBOTIX_DATA_REQUEST');
+
+
+
+      } else {
+          console.log("an invalid installationUniqueId found in header");
+      }
+  } catch (err) {
+      console.log(err);
+  }
+
+
+});
+
 
 
 
@@ -348,7 +439,6 @@ app.post('/fordevelopmentonly_generate_data_access_request_token_from_json_and_k
 const platform_token = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
 
 console.log("platform_token: " + platform_token);
-
 
 
 

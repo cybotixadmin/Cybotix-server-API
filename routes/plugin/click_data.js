@@ -5,6 +5,7 @@ var mysql = require('mysql');
 module.exports = function (app, connection) {
 
     
+  const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
   
   
@@ -100,9 +101,8 @@ app.post('/plugin_user_delete_click', (req, res) => {
   var installationUniqueId = "";
   try {
 
-    const regExpObj = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
-
-      if (regExpObj.test(req.header("installationUniqueId"))) {
+   
+      if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
         installationUniqueId = req.header("installationUniqueId");
         console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
     } else {
@@ -200,11 +200,10 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
     const valid = ajv.validate(plugin_user_get_all_clicks_json_schema, req.body);
     
     
-    const regExpObj = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
-
+ 
     var installationUniqueId = "";
     try {
-        if (regExpObj.test(req.header("installationUniqueId"))) {
+        if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
           installationUniqueId = req.header("installationUniqueId");
           console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
       } else {
