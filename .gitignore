@@ -8,6 +8,7 @@ lerna-debug.log*
 .pnpm-debug.log*
 
 .dockerignore
+API-call-samples.txt
 
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
