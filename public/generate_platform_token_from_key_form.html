@@ -2,19 +2,38 @@
 <html><head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="generate_platform_token_from_key_form.css"
-    <title>generate platform tokens from a provided keypair</title>
+    <title>generate a platform token</title>
 </head>
 
 <body>
-paste in the key
-<form action="/generate_platform_token_from_key" method="post">
-Private key
-<textarea name="privatekey_pem"></textarea>
-<p/>
-Public key
-<textarea name="publickey_pem"></textarea>
 
+<h2>Enter your details:</h2>
+<form action="/plugin_user_create_access_token" method="post"> <!-- Adjust the action attribute to your endpoint -->
+    <div>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+    </div>
 
-<input type="submit" name="submit01" value="submit" />
+    <div style="margin-top: 20px;">
+        <label for="publicKey">Public Key (PEM Format):</label>
+        <textarea id="publicKey" name="publicKey" placeholder="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----" required></textarea>
+    </div>
 
-</form></body></html>
+<br/>openssl can be used to create the public key.
+<br/>openssl genpkey -algorithm RSA -out private_key.pem
+<br/>openssl rsa -pubout -in private_key.pem -out public_key.pem
+
+    <div style="margin-top: 20px;">
+        <input type="submit" value="Submit">
+    </div>
+Validate the token with the public key below
+<pre>
+    -----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9XlKvOzLJ2pjIIOZAPLqFSO4B2mr
+eUq+7Sj3whUiZ2z8OddZyDnUiG8sDo5ilopnN6I/vF8RoshDuUah6NwNcw==
+-----END PUBLIC KEY-----
+</pre>
+    
+</form>
+
+</body></html>

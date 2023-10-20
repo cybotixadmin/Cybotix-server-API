@@ -5,6 +5,27 @@ const jsonwebtoken = require('jsonwebtoken');
 const jsonwebtoken2 = require('jsonwebtoken');
 const crypto = require('crypto');
 
+
+const bunyan = require('bunyan');
+var RotatingFileStream = require('bunyan-rotating-file-stream');
+// Create a logger instance
+const log = bunyan.createLogger({
+  name: 'apiapp',                    // Name of the application
+  streams: [{
+    stream: new RotatingFileStream({
+        type: 'rotating-file',
+        path: 'logs/server-tokens-%Y%m%d.log',
+        period: '1d',          // daily rotation 
+        totalFiles: 10,        // keep up to 10 back copies 
+        rotateExisting: true,  // Give ourselves a clean file when we start up, based on period 
+        threshold: '10m',      // Rotate log files larger than 10 megabytes 
+        totalSize: '20m',      // Don't keep more than 20mb of archived log files 
+        gzip: true,             // Compress the archive log files to save space 
+        template: 'server-%Y%m%d.log' //you can add. - _ before datestamp.
+    })
+}]
+});
+
 module.exports = function (app,connection) {
 
  /**
@@ -82,7 +103,7 @@ const plugin_user_post_click_json_schema = {
   
 
   app.use((req, res, next) => {
-    console.log(`Received a request on path: ${req.path}`);
+    log.info(`Received a request on path: ${req.path}`);
     next(); // Continue to the next middleware/route handler
 });
 
@@ -95,18 +116,18 @@ If no information found, return "not_revoked"
 
 */
   app.get('/plugin_user_query_accesstoken_status', (req, res) => {
-    console.log(req.method);
-    console.log(req.path);
+    log.info(req.method);
+    log.info(req.path);
     // check the token against the database
-    console.log(req.query);
-    console.log(req.query.uuid);
+    log.info(req.query);
+    log.info(req.query.uuid);
 
 
 var installationUniqueId = "";
 try {
     if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
       installationUniqueId = req.header("installationUniqueId");
-      console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
+      log.info("a valid installationUniqueId found in header (" +installationUniqueId+")");
  
 
 
@@ -116,53 +137,52 @@ var uuid = "";
 try {
     if (regExpValidTokenUUID.test(req.query.uuid)) {
       uuid = req.query.uuid;
-      console.log("a valid uuid found in querystring (" +uuid+")");
+      log.info("a valid uuid found in querystring (" +uuid+")");
  
 
 
 const sql = 'SELECT activestatus FROM CybotixDB.data_accesstokens_tb WHERE uuid="'+uuid+'"';
        
 
-console.log("SQL 2");
-console.log(sql);
+log.info("SQL 2");
+log.info(sql);
 connection.query(sql, installationUniqueId ,(err, rows) => {
   if (err) {
     return res.status(500).json({ error: 'Database error' });
   }
-console.log(rows);
+log.info(rows);
 if (rows.length > 0)  {
   
   if (rows[0].activestatus == "1"){
-console.log("active");
+log.info("active");
 res.status(200).json({ activestatus: 'not_revoked' });
   }else{
-console.log("not active");
+log.info("not active");
 res.status(200).json({ activestatus: 'revoked' });
   }
   } else {
-    console.log("not found");
+    log.info("not found");
     res.status(200).json({ activestatus: 'not_revoked' });
   }
 
 });
 } else {
-  console.log("an invalid uuid found in querystring");
+  log.info("an invalid uuid found in querystring");
 }
 } catch (err) {
-console.log(err);
+log.info(err);
 }
 } else {
-  console.log("an invalid installationUniqueId found in header");
+  log.info("an invalid installationUniqueId found in header");
 }
 } catch (err) {
-console.log(err);
+log.info(err);
 }
 
   });
 
 
-
-  
+ 
 /**
  * This API is called from the plugin after the user has aither approved a request, or a request has been approved by the user in the past.
  * 
@@ -175,31 +195,31 @@ console.log(err);
  */
 
 app.get('/plugin_user_create_access_token', (req, res) => {
-  console.log('/plugin_user_create_access_token');
+  log.info('/plugin_user_create_access_token');
 
   var installationUniqueId = "";
   try {
 
       if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
           installationUniqueId = req.header("installationUniqueId");
-          console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+          log.info("a valid installationUniqueId found in header (" + installationUniqueId + ")");
 
           //create the access token based on the request approved by the user (per past agreement)
-          console.log(req.body);
+          log.info(req.body);
 
 
           const rawPlatformToken = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
-console.log("rawPlatformToken");
+log.info("rawPlatformToken");
 
 const parts = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/').split('.');
 if (parts.length !== 3) {
     //throw new Error('Invalid token format');
-    console.log('Invalid token format');
+    log.info('Invalid token format');
 }
-console.log("parts: " + parts[1 ]);
+log.info("parts: " + parts[1 ]);
 const payload_raw = parts[1 ];
 const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
-console.log(payload);
+log.info(payload);
 
 
 
@@ -209,10 +229,10 @@ console.log(payload);
 
 
       } else {
-          console.log("an invalid installationUniqueId found in header");
+          log.info("an invalid installationUniqueId found in header");
       }
   } catch (err) {
-      console.log(err);
+      log.info(err);
   }
 
 
@@ -222,8 +242,8 @@ console.log(payload);
 
 
 app.get('/fordevelopmentonly_generate_a_platform_token', (req, res) => {
-    console.log(req.method);
-    console.log(req.rawHeaders);
+    log.info(req.method);
+    log.info(req.rawHeaders);
   // Validate JSON against schema
   const njwt = require("njwt");
 const secureRandom = require("secure-random");
@@ -231,14 +251,14 @@ const secureRandom = require("secure-random");
 // This is a "secret key" that the creator of the JWT must keep private.
 var key = secureRandom(256, { type: "Buffer" });
 
-console.log(key);
+log.info(key);
 // create expire timestamp
 // Get the current date and time
 const currentDate = new Date();
 
 // Add 4 weeks (4 weeks * 7 days/week * 24 hours/day * 60 minutes/hour * 60 seconds/minute * 1000 milliseconds/second)
 const futureDate = new Date(currentDate.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
-console.log("futuredate: " + futureDate);
+log.info("futuredate: " + futureDate);
 // Convert to ISO string
 const futureDateISOString = futureDate.toISOString();
 
@@ -255,9 +275,9 @@ var claims = {
 var jwt = njwt.create(claims, key);
 
 // Log the JWT
-console.log("jwt:");
+log.info("jwt:");
 const jwt_json_text=JSON.stringify(jwt).replace(/}/g, "\n").replace(/","/g, '",\n"');
-console.log(jwt);
+log.info(jwt);
 // Jwt {
 //  header: JwtHeader { typ: 'JWT', alg: 'HS256' },
 //  body:
@@ -275,13 +295,13 @@ console.log(jwt);
 var token =  jwt.compact();
 
 // Log the compacted JWT
-console.log(jwt.compact());
+log.info(jwt.compact());
 // eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb20iLCJzdWIiOiJzb21ldXNlcmlkIiwic2NvcGUiOiJmcmVlVXNlciIsImZhdm9yaXRlQ29sb3IiOiJibGFjayIsImp0aSI6IjkwM2M1NDQ3LWViZmQtNDNlOC04ZjRkLWI3Y2M1OTIyZjVlYyIsImlhdCI6MTUyODgyNDM0OSwiZXhwIjoxNTI4ODI3OTQ5fQ.y7ad-nUsHAkI8a5bixYnr_v0vStRqnzsT4bbWGAM2vw
 
 // Verify the JWT using the secret key
 njwt.verify(token, key, (err, verifiedJwt) => {
   if (err) throw err;
-  console.log("The JWT has been verified and can be trusted!");
+  log.info("The JWT has been verified and can be trusted!");
   // The JWT has been verified and can be trusted!
 });
 
@@ -297,22 +317,121 @@ const token_page='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><ti
 });
 
 
+app.post('/plugin_user_create_access_token', (req, res) => {
+  log.info('/plugin_user_create_access_token');
+  log.info(req.method);
+  log.info(req.rawHeaders);
+  log.info("\n\nreq.body");
+  console.log(req.body.publicKey);
 
+  const JWT_SECRET = 'your_secret_key'; // Change this to a secure key
+try{
+  function isValidNameInput(input) {
+    const name_regex = /^[A-Za-z0-9,.\- ]{1,20}$/;
+
+    return name_regex.test(input);
+}
+
+function isValidPEMInput(input) {
+  
+  const pem_regex = /^[A-Za-z0-9\/\r\n\- \+]{100,4000}$/;
+  return pem_regex.test(input);
+}
+
+const name_regex = /^[A-Za-z0-9,.\- ]{1,20}$/;
+const pem_regex = /^[A-Za-z0-9\/\r\n\- \+]{100,4000}$/;
+
+console.log(name_regex.test(req.body.name));
+console.log(pem_regex.test(req.body.publicKey));
+log.info(isValidNameInput(req.body.name));
+log.info(isValidPEMInput(req.body.publicKey));
+
+if (isValidNameInput(req.body.name) && isValidPEMInput(req.body.publicKey)){
+
+
+  const subject = req.body.name;
+
+    const publicKey = req.body.publicKey;
+
+    if (!subject || !publicKey) {
+        return res.status(400).send("Missing name or public key.");
+    }
+
+    const payload = {
+        ver: "1.0", // Version of the token
+        sub: subject,
+        x5c: [publicKey], // x5c expects an array of certificate strings. Here we provide only the public key.
+        iat: Math.floor(Date.now() / 1000), // Current timestamp
+        exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days from now
+    };
+    const cybotixkey = fs.readFileSync('./keys/cybotix_private_key.pem');
+    log.info("cybotixkey");
+    log.info(cybotixkey);
+    log.debug(payload);
+   
+
+      // This is the JSON data embedded in the token. It includes the public key of the client
+var payload1 = {
+  iss: "https://api.com",
+  sub: subject,
+  scope: "freeUser",
+  favoriteColor: "black",
+  key: publicKey, 
+  version: "1.0"
+ 
+};
+
+const token = jsonwebtoken2.sign(payload, cybotixkey, { algorithm: 'ES256' ,
+header: {
+  kid: "1.0.0",
+  sub: subject
+}});
+log.info("data_access_grant_token");
+log.info(token);
+
+    
+console.log(token);
+
+// Splitting the JWT to get the header, payload, and signature
+const [header, load, signature] = token.split('.');
+
+// Base64-decoding the header and payload for display
+const decodedHeader = Buffer.from(header, 'base64').toString();
+const decodedPayload = Buffer.from(load, 'base64').toString();
+console.log("render");
+res.render('display_platformtoken', {
+    token: token,
+    decodedHeader: decodedHeader,
+    decodedPayload: decodedPayload,
+    signature: signature
+});
+
+//var page = '';
+
+   // res.send(`Generated JWT: ${token}`);
+  }else{
+    return res.status(400).send("Missing name or public key.");
+  }
+}catch(err){
+  console.log(err);
+}
+  
+})
 
 app.post('/fordevelopmentonly_generate_platform_token_from_key', (req, res) => {
-    console.log(req.method);
-    //console.log(req.rawHeaders);
-    console.log("\n\nreq.body");
-    console.log(req.body);
+    log.info(req.method);
+    //log.info(req.rawHeaders);
+    log.info("\n\nreq.body");
+    log.info(req.body);
   
-    console.log(req.body);
+    log.info(req.body);
 
     const subject = req.body.sub;
 const clientprivkey = req.body.privatekey_pem;
-console.log("privkey: " + clientprivkey);
+log.info("privkey: " + clientprivkey);
 
 const clientpubkey = req.body.publickey_pem;
-console.log("pubkey: " + clientpubkey);
+log.info("pubkey: " + clientpubkey);
 
 
   // Validate JSON against schema
@@ -326,7 +445,7 @@ const currentDate = new Date();
 
 // Add 4 weeks (4 weeks * 7 days/week * 24 hours/day * 60 minutes/hour * 60 seconds/minute * 1000 milliseconds/second)
 const futureDate = new Date(currentDate.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
-console.log("futuredate: " + futureDate);
+log.info("futuredate: " + futureDate);
 // Convert to ISO string
 const futureDateISOString = futureDate.toISOString();
 
@@ -350,16 +469,16 @@ var payload1 = {
  header: {
    kid: "self",
  }});
- console.log("token2");
- console.log(token2);
+ log.info("token2");
+ log.info(token2);
 
  // at the user customer has signed the "payload1" portion, creating JWS. 
  // Cybotix signes the whole resulting token with it's own private key. The result is the platform token. 
  // the signature-on-signature enures that the token can be trusted by the remote clients (plugins).
 
  const cybotixkey = fs.readFileSync('./keys/cybotix_private_key.pem');
-    console.log("cybotixkey");
-    console.log(cybotixkey);
+    log.info("cybotixkey");
+    log.info(cybotixkey);
     var payload = {
         platform_client: token2,
         expiration: futureDateISOString
@@ -371,8 +490,8 @@ var payload1 = {
         kid: "1.0.0",
         sub: subject
       }});
-      console.log("data_access_grant_token");
-      console.log(data_access_grant_token);
+      log.info("data_access_grant_token");
+      log.info(data_access_grant_token);
 
 
 
@@ -384,8 +503,8 @@ var payload1 = {
  // Verify the token
  const jwt = require('jsonwebtoken');
  const decoded = jwt.verify(data_access_grant_token, cybotixPublicKey, { algorithms: ['ES256'] });
-console.log("decoded");
-console.log( decoded);
+log.info("decoded");
+log.info( decoded);
 
 
       const jws_json_text2 ="";
@@ -397,19 +516,19 @@ const platform_client = decoded.platform_client;
  // Decode the header without verification
  const jwt4 = require('jsonwebtoken');
  const decodedHeader = jwt4.decode(platform_client, { complete: true }).header;
-console.log(decodedHeader);
-console.log("decoded");
+log.info(decodedHeader);
+log.info("decoded");
 const decoded_for_verification=jwt4.decode(platform_client, { complete: true });
-console.log(decoded_for_verification);
+log.info(decoded_for_verification);
 
 const verify_with_key = decoded_for_verification.payload.key;
 
-console.log("verify_with_key");
-console.log(verify_with_key);
+log.info("verify_with_key");
+log.info(verify_with_key);
 
 const decoded2 = jwt.verify(platform_client, verify_with_key, { algorithms: ['RS256'] });
-console.log("decoded2");
-console.log( decoded2);
+log.info("decoded2");
+log.info( decoded2);
 // by verifying the first signature with th public key provided, it is proven that the private key used for the signature is the same as the public key provided.
 
 
@@ -428,45 +547,45 @@ const token_page='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><ti
 
 
 app.post('/fordevelopmentonly_generate_data_access_request_token_from_json_and_key', (req, res) => {
-    //console.log(req.method);
-    //console.log(req.rawHeaders);
-   // console.log("\n\nreq.body");
-    //console.log(req.body);
+    //log.info(req.method);
+    //log.info(req.rawHeaders);
+   // log.info("\n\nreq.body");
+    //log.info(req.body);
   
-    //console.log(req.body);
+    //log.info(req.body);
 
 //const platform_token = req.body.platform_token;
 const platform_token = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
 
-console.log("platform_token: " + platform_token);
+log.info("platform_token: " + platform_token);
 
 
 
-console.log("+\n");
-console.log("data_access_request_payload: " + req.body.data_access_request_payload);
+log.info("+\n");
+log.info("data_access_request_payload: " + req.body.data_access_request_payload);
 
 const data_request_json = decodeBase64(req.body.data_access_request_payload);
 
-console.log("data_request_json: " + data_request_json);
+log.info("data_request_json: " + data_request_json);
 // schema validate the request
 
 // Validate JSON against schema
 const valid = ajv.validate(data_access_request_json_schema, data_request_json);
 
-console.log(valid);
+log.info(valid);
 
 if (!valid) {
-  console.log("invalid data format");
+  log.info("invalid data format");
   // return res.status(400).json({ error: 'Invalid data format' });
 }
 const data_request = JSON.parse(data_request_json);
-console.log("data_request: " + data_request);
-console.log( data_request);
+log.info("data_request: " + data_request);
+log.info( data_request);
 
 
 
 const clientprivkey = req.body.privatekey_pem;
-console.log("privkey: " + clientprivkey);
+log.info("privkey: " + clientprivkey);
 
 
 
@@ -487,8 +606,8 @@ console.log("privkey: " + clientprivkey);
  
  const clientpubkey = getKeyFromPlatformtoken(platform_token);
  
- console.log("clientpubkey");
- console.log(clientpubkey);
+ log.info("clientpubkey");
+ log.info(clientpubkey);
 
 
 // create expire timestamp for data request token
@@ -500,43 +619,43 @@ const default_duration =  7 * 24 * 60 * 60 * 1000;
 
 // get proposed duration from the request submitted by client
 try{
-console.log(data_request);
-//console.log(JSON.parse(data_request_json).one);
-console.log(data_request.validity);
-console.log(data_request.validity.notafter);
+log.info(data_request);
+//log.info(JSON.parse(data_request_json).one);
+log.info(data_request.validity);
+log.info(data_request.validity.notafter);
 }catch(err){
-  console.log(err);
+  log.info(err);
 }
 
 
-console.log("time remaining on platform token");
-console.log(currentDate);
+log.info("time remaining on platform token");
+log.info(currentDate);
 
 const requested_expiration_date = data_request.validity.notafter;
-console.log("requested_expiration_date: " + requested_expiration_date);
+log.info("requested_expiration_date: " + requested_expiration_date);
 
 const date1 = new Date(data_request.validity.notafter);
 const date2 = new Date(getPlatformtokenNotAfter(platform_token));
-console.log("date1 : " + date1.getTime());
-console.log("date2 : " + date2.getTime());
+log.info("date1 : " + date1.getTime());
+log.info("date2 : " + date2.getTime());
 
 // set the expiration to what was requested
 var expiration_date = date1;
 // But if the platformtoken expires earlier than that, 
 // use the shorter of the request time and the platform expiration time
 if (date1.getTime() > date2.getTime()){
-  console.log("reducing the expiration date to the platform token expiration date");
+  log.info("reducing the expiration date to the platform token expiration date");
     expiration_date = date2;
 }
 
-console.log("expiration_date: " + expiration_date);
+log.info("expiration_date: " + expiration_date);
 
 
 
 
 // Add 4 weeks (4 weeks * 7 days/week * 24 hours/day * 60 minutes/hour * 60 seconds/minute * 1000 milliseconds/second)
 //const futureDate = new Date(currentDate.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
-//console.log("futuredate: " + futureDate);
+//log.info("futuredate: " + futureDate);
 // Convert to ISO string
 const futureDateISOString = expiration_date.toISOString();
 
@@ -567,8 +686,8 @@ var payload1 = {
  header: {
    kid: "self",
  }});
- console.log("token2");
- console.log(token2);
+ log.info("token2");
+ log.info(token2);
 
 // URL/location where this data access grant token may be used
  var audience = ["https://api.cybotix.no/data","https://api.cybotix.no/development/data"];
@@ -580,8 +699,8 @@ var payload1 = {
  // the signature-on-signature enures that the token can be trusted by the remote clients (plugins).
 
  const cybotixkey = fs.readFileSync('./keys/cybotix_private_key.pem');
-    console.log("cybotixkey");
-    console.log(cybotixkey);
+    log.info("cybotixkey");
+    log.info(cybotixkey);
     var data_access_grant_payload = {
         version: "1.0",
         platform_client: token2,
@@ -594,8 +713,8 @@ var payload1 = {
       header: {
         kid: "1.0.0",
       }});
-      console.log("data_access_grant_token");
-      console.log(data_access_grant_token);
+      log.info("data_access_grant_token");
+      log.info(data_access_grant_token);
 
 
 
@@ -607,8 +726,8 @@ var payload1 = {
  // Verify the token
  const jwt = require('jsonwebtoken');
  const decoded = jwt.verify(data_access_grant_token, cybotixPublicKey, { algorithms: ['ES256'] });
-console.log("decoded");
-console.log( decoded);
+log.info("decoded");
+log.info( decoded);
 
 
       const jws_json_text2 ="";
@@ -620,19 +739,19 @@ const platform_client = decoded.platform_client;
  // Decode the header without verification
  const jwt4 = require('jsonwebtoken');
  const decodedHeader = jwt4.decode(platform_client, { complete: true }).header;
-console.log(decodedHeader);
-console.log("decoded");
+log.info(decodedHeader);
+log.info("decoded");
 const decoded_for_verification=jwt4.decode(platform_client, { complete: true });
-console.log(decoded_for_verification);
+log.info(decoded_for_verification);
 
 const verify_with_key = decoded_for_verification.payload.key;
 
-console.log("verify_with_key");
-console.log(verify_with_key);
+log.info("verify_with_key");
+log.info(verify_with_key);
 
 const decoded2 = jwt.verify(platform_client, verify_with_key, { algorithms: ['RS256'] });
-console.log("decoded2");
-console.log( decoded2);
+log.info("decoded2");
+log.info( decoded2);
 // by verifying the first signature with th public key provided, it is proven that the private key used for the signature is the same as the public key provided.
 
 
@@ -652,46 +771,46 @@ const token_page='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><ti
 
 
 app.post('/fordevelopmentonly_generate_data_agreement_grant_token_from_json_and_key', (req, res) => {
-  //console.log(req.method);
-  //console.log(req.rawHeaders);
- // console.log("\n\nreq.body");
-  //console.log(req.body);
+  //log.info(req.method);
+  //log.info(req.rawHeaders);
+ // log.info("\n\nreq.body");
+  //log.info(req.body);
 
-  //console.log(req.body);
+  //log.info(req.body);
 
 //const platform_token = req.body.platform_token;
 const platform_token = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
 
-console.log("platform_token: " + platform_token);
+log.info("platform_token: " + platform_token);
 
 
 
 
-console.log("+\n");
-console.log("data_agreement_request_payload: " + req.body.data_access_request_payload);
+log.info("+\n");
+log.info("data_agreement_request_payload: " + req.body.data_access_request_payload);
 
 const data_request_json = decodeBase64(req.body.data_access_request_payload);
 
-console.log("data_request_json: " + data_request_json);
+log.info("data_request_json: " + data_request_json);
 // schema validate the request
 
 // Validate JSON against schema
 const valid = ajv.validate(data_access_request_json_schema, data_request_json);
 
-console.log(valid);
+log.info(valid);
 
 if (!valid) {
-console.log("invalid data format");
+log.info("invalid data format");
 // return res.status(400).json({ error: 'Invalid data format' });
 }
 const data_request = JSON.parse(data_request_json);
-console.log("data_request: " + data_request);
-console.log( data_request);
+log.info("data_request: " + data_request);
+log.info( data_request);
 
 
 
 const clientprivkey = req.body.privatekey_pem;
-console.log("privkey: " + clientprivkey);
+log.info("privkey: " + clientprivkey);
 
 
 
@@ -712,8 +831,8 @@ console.log("privkey: " + clientprivkey);
 
 const clientpubkey = getKeyFromPlatformtoken(platform_token);
 
-console.log("clientpubkey");
-console.log(clientpubkey);
+log.info("clientpubkey");
+log.info(clientpubkey);
 
 
 // create expire timestamp for data request token
@@ -725,43 +844,43 @@ const default_duration =  7 * 24 * 60 * 60 * 1000;
 
 // get proposed duration from the request submitted by client
 try{
-console.log(data_request);
-//console.log(JSON.parse(data_request_json).one);
-console.log(data_request.validity);
-console.log(data_request.validity.notafter);
+log.info(data_request);
+//log.info(JSON.parse(data_request_json).one);
+log.info(data_request.validity);
+log.info(data_request.validity.notafter);
 }catch(err){
-console.log(err);
+log.info(err);
 }
 
 
-console.log("time remaining on platform token");
-console.log(currentDate);
+log.info("time remaining on platform token");
+log.info(currentDate);
 
 const requested_expiration_date = data_request.validity.notafter;
-console.log("requested_expiration_date: " + requested_expiration_date);
+log.info("requested_expiration_date: " + requested_expiration_date);
 
 const date1 = new Date(data_request.validity.notafter);
 const date2 = new Date(getPlatformtokenNotAfter(platform_token));
-console.log("date1 : " + date1.getTime());
-console.log("date2 : " + date2.getTime());
+log.info("date1 : " + date1.getTime());
+log.info("date2 : " + date2.getTime());
 
 // set the expiration to what was requested
 var expiration_date = date1;
 // But if the platformtoken expires earlier than that, 
 // use the shorter of the request time and the platform expiration time
 if (date1.getTime() > date2.getTime()){
-console.log("reducing the expiration date to the platform token expiration date");
+log.info("reducing the expiration date to the platform token expiration date");
   expiration_date = date2;
 }
 
-console.log("expiration_date: " + expiration_date);
+log.info("expiration_date: " + expiration_date);
 
 
 
 
 // Add 4 weeks (4 weeks * 7 days/week * 24 hours/day * 60 minutes/hour * 60 seconds/minute * 1000 milliseconds/second)
 //const futureDate = new Date(currentDate.getTime() + 4 * 7 * 24 * 60 * 60 * 1000);
-//console.log("futuredate: " + futureDate);
+//log.info("futuredate: " + futureDate);
 // Convert to ISO string
 const futureDateISOString = expiration_date.toISOString();
 
@@ -792,8 +911,8 @@ const token2 = jsonwebtoken.sign(payload1, clientprivkey, { algorithm: 'RS256' ,
 header: {
  kid: "self",
 }});
-console.log("token2");
-console.log(token2);
+log.info("token2");
+log.info(token2);
 
 // URL/location where this data agreement grant token may be used
 var audience = ["https://api.cybotix.no/data","https://api.cybotix.no/development/data"];
@@ -805,8 +924,8 @@ var audience = ["https://api.cybotix.no/data","https://api.cybotix.no/developmen
 // the signature-on-signature enures that the token can be trusted by the remote clients (plugins).
 
 const cybotixkey = fs.readFileSync('./keys/cybotix_private_key.pem');
-  console.log("cybotixkey");
-  console.log(cybotixkey);
+  log.info("cybotixkey");
+  log.info(cybotixkey);
   var data_access_grant_payload = {
       version: "1.0",
       platform_client: token2,
@@ -819,8 +938,8 @@ const cybotixkey = fs.readFileSync('./keys/cybotix_private_key.pem');
     header: {
       kid: "1.0.0",
     }});
-    console.log("data_access_grant_token");
-    console.log(data_access_grant_token);
+    log.info("data_access_grant_token");
+    log.info(data_access_grant_token);
 
 
 
@@ -832,8 +951,8 @@ const cybotixPublicKey = fs.readFileSync('./keys/cybotix_public_key.pem');
 // Verify the token
 const jwt = require('jsonwebtoken');
 const decoded = jwt.verify(data_access_grant_token, cybotixPublicKey, { algorithms: ['ES256'] });
-console.log("decoded");
-console.log( decoded);
+log.info("decoded");
+log.info( decoded);
 
 
     const jws_json_text2 ="";
@@ -845,19 +964,19 @@ const platform_client = decoded.platform_client;
 // Decode the header without verification
 const jwt4 = require('jsonwebtoken');
 const decodedHeader = jwt4.decode(platform_client, { complete: true }).header;
-console.log(decodedHeader);
-console.log("decoded");
+log.info(decodedHeader);
+log.info("decoded");
 const decoded_for_verification=jwt4.decode(platform_client, { complete: true });
-console.log(decoded_for_verification);
+log.info(decoded_for_verification);
 
 const verify_with_key = decoded_for_verification.payload.key;
 
-console.log("verify_with_key");
-console.log(verify_with_key);
+log.info("verify_with_key");
+log.info(verify_with_key);
 
 const decoded2 = jwt.verify(platform_client, verify_with_key, { algorithms: ['RS256'] });
-console.log("decoded2");
-console.log( decoded2);
+log.info("decoded2");
+log.info( decoded2);
 // by verifying the first signature with th public key provided, it is proven that the private key used for the signature is the same as the public key provided.
 
 
@@ -882,25 +1001,25 @@ function inserttokenuuid(uuid){
 
   const sql = 'INSERT INTO CybotixDB.data_accesstoken_tb (createtime, uuid,1) VALUES (now(),"'+uuid + '", 1 )';
   
-  console.log("SQL 1");
-  console.log(sql);
+  log.info("SQL 1");
+  log.info(sql);
 
   connection.query(sql, function (err, result) {
     //db.all(sql, values, (err, rows) => {
         if (err) {
-          console.debug(err);
+          log.debug(err);
             return res.status(500).json({
                 error: 'Database error'
             });
         }
-//        console.log(result);
- //       console.log(result.affectedRows);
-//console.log("1---"+JSON.parse(result));
-//console.log("2---"+JSON.stringify(result));
+//        log.info(result);
+ //       log.info(result.affectedRows);
+//log.info("1---"+JSON.parse(result));
+//log.info("2---"+JSON.stringify(result));
 
 
         if (result.affectedRows > 0) {
-            console.log("affectedRows: " + result.affectedRows)
+            log.info("affectedRows: " + result.affectedRows)
             res.status(200).json('{"added:"'+result.affectedRows+"}");
         } else {
             res.status(404).json({});
@@ -925,8 +1044,8 @@ function getKeyFromPlatformtoken(platform_token) {
     // Verify the token
     const jwt3 = require('jsonwebtoken');
     const decoded3 = jwt3.verify(platform_token, cybotixPublicKey3, { algorithms: ['ES256'] });
-    console.log("decoded3");
-    console.log(decoded3);
+    log.info("decoded3");
+    log.info(decoded3);
 
 
     // validate the inner part that comes from the client/customer
@@ -935,19 +1054,19 @@ function getKeyFromPlatformtoken(platform_token) {
     // Decode the header without verification
     const jwt5 = require('jsonwebtoken');
     const decodedHeader3 = jwt5.decode(decoded3.platform_client, { complete: true }).header;
-    console.log(decodedHeader3);
-    console.log("decoded");
+    log.info(decodedHeader3);
+    log.info("decoded");
     const decoded_for_verification4 = jwt5.decode(decoded3.platform_client, { complete: true });
-    console.log(decoded_for_verification4);
+    log.info(decoded_for_verification4);
 
     const verify_with_key4 = decoded_for_verification4.payload.key;
 
-    console.log("verify_with_key4");
-    console.log(verify_with_key4);
+    log.info("verify_with_key4");
+    log.info(verify_with_key4);
 
     const decoded5 = jwt5.verify(decoded3.platform_client, verify_with_key4, { algorithms: ['RS256'] });
-    console.log("decoded5");
-    console.log(decoded5);
+    log.info("decoded5");
+    log.info(decoded5);
     // by verifying the first signature with th public key provided, it is proven that the private key used for the signature is the same as the public key provided.
     const clientpubkey = decoded5.key;
     return clientpubkey;
@@ -957,23 +1076,23 @@ function getKeyFromPlatformtoken(platform_token) {
 
 
 function getPlatformtokenNotAfter(platform_token) {
-console.log("getPlatformtokenNotAfter");
+log.info("getPlatformtokenNotAfter");
 const jwt = require('jsonwebtoken');
 const decoded_for_extract = jwt.decode(platform_token, { complete: true });
 return decoded_for_extract.payload.expiration;
 
-console.log(decoded_for_extract);
+log.info(decoded_for_extract);
 
-console.log(decoded_for_extract.payload);
-console.log(decoded_for_extract.payload.expiration);
-console.log("#######");
+log.info(decoded_for_extract.payload);
+log.info(decoded_for_extract.payload.expiration);
+log.info("#######");
 
     const cybotixPublicKey3 = fs.readFileSync('./keys/cybotix_public_key.pem');
     // Verify the token
     const jwt3 = require('jsonwebtoken');
     const decoded3 = jwt3.verify(platform_token, cybotixPublicKey3, { algorithms: ['ES256'] });
-    console.log("decoded3");
-    console.log(decoded3);
+    log.info("decoded3");
+    log.info(decoded3);
 
 
     // validate the inner part that comes from the client/customer
@@ -982,19 +1101,19 @@ console.log("#######");
     // Decode the header without verification
     const jwt5 = require('jsonwebtoken');
     const decodedHeader3 = jwt5.decode(decoded3.platform_client, { complete: true }).header;
-    console.log(decodedHeader3);
-    console.log("decoded");
+    log.info(decodedHeader3);
+    log.info("decoded");
     const decoded_for_verification4 = jwt5.decode(decoded3.platform_client, { complete: true });
-    console.log(decoded_for_verification4);
+    log.info(decoded_for_verification4);
 
     const verify_with_key4 = decoded_for_verification4.payload.key;
 
-    console.log("verify_with_key4");
-    console.log(verify_with_key4);
+    log.info("verify_with_key4");
+    log.info(verify_with_key4);
 
     const decoded5 = jwt5.verify(decoded3.platform_client, verify_with_key4, { algorithms: ['RS256'] });
-    console.log("decoded5");
-    console.log(decoded5);
+    log.info("decoded5");
+    log.info(decoded5);
     // by verifying the first signature with th public key provided, it is proven that the private key used for the signature is the same as the public key provided.
     const clientpubkey = decoded5.key;
     return clientpubkey;

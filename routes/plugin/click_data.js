@@ -2,6 +2,25 @@ const Ajv = require('ajv');
 const crypto = require('crypto');
 var mysql = require('mysql'); 
 
+const bunyan = require('bunyan');
+var RotatingFileStream = require('bunyan-rotating-file-stream');
+// Create a logger instance
+const log = bunyan.createLogger({
+  name: 'apiapp',                    // Name of the application
+  streams: [{
+    stream: new RotatingFileStream({
+        type: 'rotating-file',
+        path: './logs/server-click_data-%Y%m%d.log',
+        period: '1d',          // daily rotation 
+        totalFiles: 10,        // keep up to 10 back copies 
+        rotateExisting: true,  // Give ourselves a clean file when we start up, based on period 
+        threshold: '10m',      // Rotate log files larger than 10 megabytes 
+        totalSize: '20m',      // Don't keep more than 20mb of archived log files 
+        gzip: true,             // Compress the archive log files to save space 
+        template: 'server-%Y%m%d.log' //you can add. - _ before datestamp.
+    })
+}]
+});
 module.exports = function (app, connection) {
 
     
@@ -95,8 +114,8 @@ const plugin_user_post_click_json_schema = {
 
 
 app.post('/plugin_user_delete_click', (req, res) => {
-    console.log('/plugin_user_delete_click');
-   // console.log(req.rawHeaders);
+    log.info('/plugin_user_delete_click');
+   // log.info(req.rawHeaders);
   // Validate JSON against schema
   var installationUniqueId = "";
   try {
@@ -104,14 +123,14 @@ app.post('/plugin_user_delete_click', (req, res) => {
    
       if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
         installationUniqueId = req.header("installationUniqueId");
-        console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
+        log.info("a valid installationUniqueId found in header (" +installationUniqueId+")");
     } else {
-          console.log("an invalid installationUniqueId found in header");
+          log.info("an invalid installationUniqueId found in header");
 
       }
 
   } catch (err) {
-      console.log(err);
+      log.info(err);
 
   }
   const valid = ajv.validate(plugin_user_delete_click_json_schema, req.body);
@@ -124,19 +143,19 @@ app.post('/plugin_user_delete_click', (req, res) => {
   const sql = 'DELETE FROM CybotixDB.clickdata_tb WHERE browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
 
   const values = [req.body.browser_id ,req.body.id];
-  console.log(sql);
-  console.log(values);
+  log.info(sql);
+  log.info(values);
   connection.query(sql, function (err, result) {
   
         if (err) {
-          console.debug(err);
+          log.debug(err);
             return res.status(500).json({
                 error: 'Database error'
             });
         }
 
         if (result.affectedRows > 0) {
-            console.log("affectedRows: " + result.affectedRows)
+            log.info("affectedRows: " + result.affectedRows)
             res.status(200).json('{"added:"'+result.affectedRows+"}");
         } else {
             res.status(404).json({});
@@ -146,10 +165,10 @@ app.post('/plugin_user_delete_click', (req, res) => {
 
 
 app.post('/plugin_user_post_click', (req, res) => {
-  console.debug("/plugin_user_post_click");
-    //console.log(req.method);
-   //console.log(req.rawHeaders);
-   console.debug(req.body);
+  log.debug("/plugin_user_post_click");
+    //log.info(req.method);
+   //log.info(req.rawHeaders);
+   log.debug(req.body);
   // Validate JSON against schema
   const valid = ajv.validate(plugin_user_post_click_json_schema, req.body);
 
@@ -165,25 +184,25 @@ app.post('/plugin_user_post_click', (req, res) => {
   const values = [req.body.url, req.body.browser_id ,utc, req.body.localtime];
   const sql = 'INSERT INTO CybotixDB.clickdata_tb (url, browser_id,uuid, utc, local_time) VALUES ("'+req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
   
-  console.log("SQL 1");
-  console.log(sql);
+  log.info("SQL 1");
+  log.info(sql);
 
   connection.query(sql, function (err, result) {
     //db.all(sql, values, (err, rows) => {
         if (err) {
-          console.debug(err);
+          log.debug(err);
             return res.status(500).json({
                 error: 'Database error'
             });
         }
-//        console.log(result);
- //       console.log(result.affectedRows);
-//console.log("1---"+JSON.parse(result));
-//console.log("2---"+JSON.stringify(result));
+//        log.info(result);
+ //       log.info(result.affectedRows);
+//log.info("1---"+JSON.parse(result));
+//log.info("2---"+JSON.stringify(result));
 
 
         if (result.affectedRows > 0) {
-            console.log("affectedRows: " + result.affectedRows)
+            log.info("affectedRows: " + result.affectedRows)
             res.status(200).json('{"added:"'+result.affectedRows+"}");
         } else {
             res.status(404).json({});
@@ -193,9 +212,9 @@ app.post('/plugin_user_post_click', (req, res) => {
 
 
 app.post('/plugin_user_get_all_clicks', (req, res) => {
-    console.log(req.method);
-    console.log(req.rawHeaders);
-    console.log(req.body);
+    log.info(req.method);
+    log.info(req.rawHeaders);
+    log.info(req.body);
     // Validate JSON against schema
     const valid = ajv.validate(plugin_user_get_all_clicks_json_schema, req.body);
     
@@ -205,12 +224,12 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
     try {
         if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
           installationUniqueId = req.header("installationUniqueId");
-          console.log("a valid installationUniqueId found in header (" +installationUniqueId+")");
+          log.info("a valid installationUniqueId found in header (" +installationUniqueId+")");
       } else {
-            console.log("an invalid installationUniqueId found in header");
+            log.info("an invalid installationUniqueId found in header");
         }
     } catch (err) {
-        console.log(err);
+        log.info(err);
     }
 
     if (!valid) {
@@ -219,17 +238,17 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
 
     // Read from database
     //const browser_id = [req.body.browser_id];
-    //console.log(browser_id);
+    //log.info(browser_id);
 //    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
     const sql = 'SELECT uuid,utc, local_time, url FROM CybotixDB.clickdata_tb WHERE browser_id = "'+installationUniqueId+'" ';
-    console.log(sql);
+    log.info(sql);
     connection.query(sql, installationUniqueId, (err, rows) => {
         if (err) {
           return res.status(500).json({ error: 'Database error' });
         }
-    console.log(rows);
+    log.info(rows);
     if (rows.length > 0)  {
-        console.log(rows)
+        log.info(rows)
           res.status(200).json(rows);
         } else {
           res.status(404).json({ error: 'Message not found' });

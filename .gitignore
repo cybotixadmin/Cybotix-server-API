@@ -11,4 +11,5 @@ lerna-debug.log*
 *.txt
 
 node_modules
+keys
 

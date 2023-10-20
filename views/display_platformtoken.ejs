@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token Details</title>
+</head>
+<body>
+
+<h2>Your Cybotix platform access JWT:</h2>
+<p><strong>Encoded:</strong> <%= token %></p>
+
+<h2>Decoded JWT:</h2>
+<p><strong>Header:</strong> <%= decodedHeader %></p>
+<p><strong>Payload:</strong> <%= decodedPayload %></p>
+<p><strong>Signature:</strong> <%= signature %></p>
+
+<h2>Instructions:</h2>
+<ol>
+    <li>To verify the token:</li>
+        <ul>
+            <li>Copy the encoded token.</li>
+            <li>Visit <a href="https://jwt.io" target="_blank">jwt.io</a>.</li>
+            <li>Paste the token into the "Encoded" input box. You should see the decoded header and payload on the site.</li>
+        </ul>
+    <li>To verify the timestamp:</li>
+        <ul>
+            <li>From the decoded payload, locate the 'iat' or 'exp' fields which represent timestamps.</li>
+            <li>Copy the timestamp value.</li>
+            <li>Visit <a href="https://www.epochconverter.com/" target="_blank">epochconverter.com</a>.</li>
+            <li>Paste the timestamp into the converter to see the corresponding date and time.</li>
+        </ul>
+</ol>
+
+</body>
+</html>

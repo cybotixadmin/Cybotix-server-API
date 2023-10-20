@@ -16,6 +16,26 @@ const valid_audience_values = {
     "Cybotix": "1"
 };
 
+const bunyan = require('bunyan');
+var RotatingFileStream = require('bunyan-rotating-file-stream');
+// Create a logger instance
+const log = bunyan.createLogger({
+  name: 'apiapp',                    // Name of the application
+  streams: [{
+    stream: new RotatingFileStream({
+        type: 'rotating-file',
+        path: './logs/server-data_agreements-%Y%m%d.log',
+        period: '1d',          // daily rotation 
+        totalFiles: 10,        // keep up to 10 back copies 
+        rotateExisting: true,  // Give ourselves a clean file when we start up, based on period 
+        threshold: '10m',      // Rotate log files larger than 10 megabytes 
+        totalSize: '20m',      // Don't keep more than 20mb of archived log files 
+        gzip: true,             // Compress the archive log files to save space 
+        template: 'server-%Y%m%d.log' //you can add. - _ before datestamp.
+    })
+}]
+});
+
 module.exports = function (app, connection) {
 
     // JSON Schema
@@ -157,26 +177,26 @@ module.exports = function (app, connection) {
 
             if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
                 installationUniqueId = req.header("installationUniqueId");
-                console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+                log.info("a valid installationUniqueId found in header (" + installationUniqueId + ")");
             } else {
-                console.log("an invalid installationUniqueId found in header");
+                log.info("an invalid installationUniqueId found in header");
 
             }
 
         } catch (err) {
-            console.log(err);
+            log.info(err);
 
         }
-        console.log("adding agreement");
-        console.log(JSON.stringify(req.body));
+        log.info("adding agreement");
+        log.info(JSON.stringify(req.body));
 
         // generate agreement id
 
         const uuid = crypto.randomUUID()
 
             // var data_grants = req.body.data_grants;
-            // console.debug(data_grants)
-            // console.debug(JSON.stringify(data_grants))
+            // log.debug(data_grants)
+            // log.debug(JSON.stringify(data_grants))
 
             var original_request;
         try {
@@ -187,22 +207,22 @@ module.exports = function (app, connection) {
         // use the data_grants field to contain more easily searchable specifics about the access granted.
         var data_grants;
         try {
-            console.debug("data grants")
-            //console.debug(req.body.data_grants);
+            log.debug("data grants")
+            //log.debug(req.body.data_grants);
             data_grants = JSON.stringify(req.body.data_grants);
-            //console.debug(req.body.original_request.requests[0]);
-            console.debug(data_grants);
-            //          console.debug(data_grants === "undefined");
+            //log.debug(req.body.original_request.requests[0]);
+            log.debug(data_grants);
+            //          log.debug(data_grants === "undefined");
 
 
             //data_grants = '{"data_grants":'+JSON.stringify(data_grants) + '}';
         } catch (err) {}
 
-        console.debug(original_request);
+        log.debug(original_request);
         //       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
         const utc = new Date().toISOString();
         //const values = [req.body.browser_id ,uuid , req.body.agreement_json.createtime , utc  , JSON.stringify(json)];
-        //console.log(values);
+        //log.info(values);
         var sql;
         //  if (data_grants === "undefined"){
         //    sql = 'INSERT INTO CybotixDB.data_agreements_tb ( browserid, uuid, createtime, lastmodifiedtime,active,  original_request ) VALUES("'+installationUniqueId+'","'+uuid+'", now(), now(),1,' + "'"+ original_request+ "'"+')';
@@ -210,25 +230,25 @@ module.exports = function (app, connection) {
         sql = 'INSERT INTO CybotixDB.data_agreements_tb ( browserid, uuid, createtime, lastmodifiedtime,active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
         //  }
 
-        console.log("SQL 2");
-        console.log(sql);
+        log.info("SQL 2");
+        log.info(sql);
 
         connection.query(sql, function (err, result) {
             //db.all(sql, values, (err, rows) => {
             if (err) {
-                console.debug(err);
+                log.debug(err);
                 return res.status(500).json({
                     error: 'Database error'
                 });
             }
-            console.log(result);
-            console.log(result.affectedRows);
-            //console.log("1---"+JSON.parse(result));
-            //console.log("2---"+JSON.stringify(result));
+            log.info(result);
+            log.info(result.affectedRows);
+            //log.info("1---"+JSON.parse(result));
+            //log.info("2---"+JSON.stringify(result));
 
 
             if (result.affectedRows > 0) {
-                console.log("affectedRows: " + result.affectedRows)
+                log.info("affectedRows: " + result.affectedRows)
                 res.status(200).json('{"added:"' + result.affectedRows + "}");
             } else {
                 res.status(404).json({});
@@ -237,8 +257,8 @@ module.exports = function (app, connection) {
     });
 
     app.get('/plugin_user_check_request_against_data_agreements', (req, res) => {
-        console.log(req.method);
-        console.log(req.rawHeaders);
+        log.info(req.method);
+        log.info(req.rawHeaders);
 
         var isCoveredByAgreement = false;
         var installationUniqueId = "";
@@ -246,49 +266,49 @@ module.exports = function (app, connection) {
 
             if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
                 installationUniqueId = req.header("installationUniqueId");
-                console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+                log.info("a valid installationUniqueId found in header (" + installationUniqueId + ")");
 
                 const rawPlatformToken = req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN');
                 getValidPlatformToken(rawPlatformToken).then(function (data) {
-                    console.log(data);
+                    log.info(data);
 
                     // lookup the ID from the platform token agains this users agreements in the database
                     const counterparty_id = data.sub;
-                    console.debug("counterparty_id: " + counterparty_id);
+                    log.debug("counterparty_id: " + counterparty_id);
 
                     //
                     const sql = 'SELECT * FROM CybotixDB.data_agreements_tb WHERE counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
 
-                    console.log("SQL 2.1");
-                    console.log(sql);
+                    log.info("SQL 2.1");
+                    log.info(sql);
                     connection.query(sql, installationUniqueId, (err, rows) => {
-                        console.log("SQL 2.1.0");
+                        log.info("SQL 2.1.0");
                         if (err) {
                             return res.status(500).json({
                                 error: 'Database error'
                             });
                         }
-                        console.log("2.2");
-                        console.log(rows);
+                        log.info("2.2");
+                        log.info(rows);
                         if (rows.length > 0) {
                             // some agreements where in place for this user and counterparty
 
                             // get request
                             const rawDataRequest = req.get('X_HTTP_CYBOTIX_DATA_REQUEST');
-                            console.debug("rawDataRequest: " + rawDataRequest);
+                            log.debug("rawDataRequest: " + rawDataRequest);
                             const dataRequest = JSON.parse(base642str(rawDataRequest));
                             for (let j = 0; j < dataRequest.requests.length; j++) {
                                 // is this request covered ?
                                 const data_ask = JSON.stringify(dataRequest.requests[j]);
-                                console.debug("data_ask: " + data_ask);
+                                log.debug("data_ask: " + data_ask);
                                 for (let i = 0; i < rows.length; i++) {
                                     const result = rows[i];
-                                    console.log("check if this agreement covers the request");
-                                    console.log(result);
+                                    log.info("check if this agreement covers the request");
+                                    log.info(result);
                                     // get the datagrant from the database
                                     const data_grants = result.data_grants;
                                     const current_datagrant = JSON.stringify(JSON.parse(data_grants));
-                                    console.debug("current_datagrant: " + current_datagrant);
+                                    log.debug("current_datagrant: " + current_datagrant);
                                     // check if this agreement covers the request
                                     if (current_datagrant.includes(data_ask)) {
                                         isCoveredByAgreement = true;
@@ -299,42 +319,42 @@ module.exports = function (app, connection) {
                                 }
                             }
 
-                            console.log("2.4");
+                            log.info("2.4");
 
                             if (isCoveredByAgreement) {
-                                console.log("active");
+                                log.info("active");
                                 res.status(200).json({
                                     covered: 'true'
                                 });
                             } else {
-                                console.log("not active");
+                                log.info("not active");
                                 res.status(200).json({
                                     covered: 'false'
                                 });
                             }
                         } else {
-                            console.log("2.5");
-                            console.log("not found");
+                            log.info("2.5");
+                            log.info("not found");
                             res.status(200).json({
                                 covered: 'false'
                             });
                         }
-                        console.log("2.6");
+                        log.info("2.6");
                     });
                 }).catch(function (err) {
-                    console.log(err);
+                    log.info(err);
                 });
             } else {
-                console.log("an invalid installationUniqueId found in header");
+                log.info("an invalid installationUniqueId found in header");
             }
         } catch (err) {
-            console.log(err);
+            log.info(err);
         }
     });
 
     app.post('/plugin_user_validate_data_agreement', (req, res) => {
-        console.log(req.method);
-        console.log(req.rawHeaders);
+        log.info(req.method);
+        log.info(req.rawHeaders);
         // Validate JSON against schema
         const valid = ajv.validate(plugin_user_validate_data_agreement_json_schema, req.body);
 
@@ -350,8 +370,8 @@ module.exports = function (app, connection) {
         //  const sql = "DELETE FROM messages WHERE browser_id='" +req.body.browser_id+ "' AND id=" +req.body.id+ "";
 
         const values = [req.body.browser_id, req.body.id];
-        console.log(sql);
-        console.log(values);
+        log.info(sql);
+        log.info(values);
 
         db.run(sql, values, function (err) {
             if (err) {
@@ -366,8 +386,8 @@ module.exports = function (app, connection) {
     });
 
     app.post('/plugin_user_delete_data_agreement', (req, res) => {
-        console.log(req.method);
-        console.log(req.rawHeaders);
+        log.info(req.method);
+        log.info(req.rawHeaders);
         // Validate JSON against schema
         const valid = ajv.validate(plugin_user_delete_data_agreement_json_schema, req.body);
 
@@ -381,8 +401,8 @@ module.exports = function (app, connection) {
         const sql = 'DELETE FROM CybotixDB.data_agreements WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
 
         const values = [req.body.browser_id, req.body.uuid];
-        console.log(sql);
-        console.log(values);
+        log.info(sql);
+        log.info(values);
 
         all_data_agreements_db.run(sql, values, function (err) {
             if (err) {
@@ -397,9 +417,9 @@ module.exports = function (app, connection) {
     });
 
     app.post('/plugin_user_read_all_data_agreements', (req, res) => {
-        //  console.log(req.method);
-        //  console.log(req.rawHeaders);
-        //  console.log(req.body);
+        //  log.info(req.method);
+        //  log.info(req.rawHeaders);
+        //  log.info(req.body);
         // Validate JSON against schema
         const valid = ajv.validate(plugin_user_read_all_agreements_json_schema, req.body);
 
@@ -418,9 +438,9 @@ module.exports = function (app, connection) {
                     error: 'Database error'
                 });
             }
-            // console.log(rows);
+            // log.info(rows);
             if (rows.length > 0) {
-                console.log(rows)
+                log.info(rows)
                 res.status(200).json(rows);
             } else {
                 res.status(404).json({
@@ -434,13 +454,13 @@ module.exports = function (app, connection) {
 
 /*return the payload of a validated token, or nothing*/
 function getValidPlatformToken(token) {
-    console.log("getValidPlatformToken");
-    console.log(token);
+    log.info("getValidPlatformToken");
+    log.info(token);
     return new Promise(function (resolve, reject) {
         const parts = token.replace(/-/g, '+').replace(/_/g, '/').split('.');
         if (parts.length !== 3) {
             //throw new Error('Invalid token format');
-            console.log('Invalid token format');
+            log.info('Invalid token format');
         } else {
 
             parseJWTbypassSignCheck(token, "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzNDQRPGUPmpUj3K7D0LoucRrCuAwLLD7B0i9iOfJLXps9lN05+bL8H24eVGwb8UO+Ip+2GQrLlPoErvuqqftv9heKQ9C6P3dNPFHsgcJqLIT2qYOWRXqceKdV5VshGzVRdS7v+/giWn4uTkEFskor9JZJFnxredZyOK7Buc/WvU1yt40FQum1/mpCPCmKcqulBib93PpwlXkjyZfbmQHG5QQ/DSg2bE607SrXc0vRYhrHfiuncSbfkKaxPA4C/YQr/4QbyX1Hm/IzKrToaWwghjF0uP0VWVlHJ1xfyGlxQvPllQpa6t7FuBx3N9xJ1OEsGRo4gS7ctiogHVwh1M5oQIDAQAB")
@@ -449,11 +469,11 @@ function getValidPlatformToken(token) {
                 return validatePlatformToken(payload);
             }).then(function (data) {
                 platformtokencontent = data;
-                console.log(platformtokencontent);
+                log.info(platformtokencontent);
                 resolve(platformtokencontent);
 
             }).catch(function (err) {
-                console.log(err);
+                log.info(err);
                 reject();
             });
         }
@@ -461,12 +481,12 @@ function getValidPlatformToken(token) {
 }
 
 function parseJWTbypassSignCheck(token, publicKeyPEM) {
-    console.log("parseJWTbypassSignCheck");
-    // console.log(token);
+    log.info("parseJWTbypassSignCheck");
+    // log.info(token);
     const parts = token.replace(/-/g, '+').replace(/_/g, '/').split('.');
     if (parts.length !== 3) {
         //throw new Error('Invalid token format');
-        console.log('Invalid token format');
+        log.info('Invalid token format');
     }
 
     return new Promise(function (resolve, reject) {
@@ -484,22 +504,22 @@ function base642str(data) {
 }
 
 function validatePlatformToken(tokenPayload) {
-    console.log("validatePlatformToken");
+    log.info("validatePlatformToken");
     // chect validy time
 
     // check issuer
     // check for revocation
-    console.debug(tokenPayload);
+    log.debug(tokenPayload);
 
     return new Promise(function (resolve, reject) {
 
         const aud = tokenPayload.aud;
 
-        console.debug(aud);
+        log.debug(aud);
 
-        console.debug(keyExists(tokenPayload.aud, valid_audience_values));
+        log.debug(keyExists(tokenPayload.aud, valid_audience_values));
 
-        console.debug(tokenPayload);
+        log.debug(tokenPayload);
 
         // check audience
         if (keyExists(tokenPayload.aud, valid_audience_values)) {

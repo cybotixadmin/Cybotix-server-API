@@ -6,6 +6,30 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql');
 const { v4: uuidv4 } = require('uuid');
 
+const bunyan = require('bunyan');
+var RotatingFileStream = require('bunyan-rotating-file-stream');
+// Create a logger instance
+const log = bunyan.createLogger({
+  name: 'apiapp',                    // Name of the application
+  streams: [
+  {
+    stream: new RotatingFileStream({
+        type: 'rotating-file',
+        path: 'logs/server-index-%Y%m%d.log',
+        period: '1d',          // daily rotation 
+        totalFiles: 10,        // keep up to 10 back copies 
+        rotateExisting: true,  // Give ourselves a clean file when we start up, based on period 
+        threshold: '10m',      // Rotate log files larger than 10 megabytes 
+        totalSize: '20m',      // Don't keep more than 20mb of archived log files 
+        gzip: true,             // Compress the archive log files to save space 
+        template: 'server-%Y%m%d.log' //you can add. - _ before datestamp.
+    })
+}]
+});
+
+
+log.info('My App');
+
 const njwt = require("njwt");
 const jsonwebtoken = require('jsonwebtoken');
 
@@ -17,6 +41,10 @@ const formidable = require("formidable");
 
 // Initialize express app
 const app = express();
+// Set the view engine to ejs
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 var cors = require('cors')
 const crypto = require('crypto');
 app.use(cors())
@@ -24,18 +52,18 @@ try{
 app.use(express.json());
 app.use(express.bodyParser());
 }catch(e){
-  console.log(e);
+  log.error(e);
 }
 
 
 app.options('/products/:id', cors(), function (req, res, next) {
-    console.log(req.method);
-    console.log(req.rawHeaders);
+    log.info(req.method);
+    log.info(req.rawHeaders);
  });
 
 app.delete('/products/:id', cors(), function (req, res, next) {
-    console.log(req.method);
-    console.log(req.rawHeaders);
+    log.info(req.method);
+    log.info(req.rawHeaders);
  
   res.json({msg: 'This is CORS-enabled for all origins!'})
 });
@@ -60,7 +88,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  log.info(`Server is running on port ${PORT}`);
 });
 
 
