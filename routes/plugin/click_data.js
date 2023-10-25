@@ -1,6 +1,21 @@
 const Ajv = require('ajv');
 const crypto = require('crypto');
 var mysql = require('mysql'); 
+const express = require('express');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+
+// Read the configuration file once and store the data in memory
+const configFile = fs.readFileSync('./config.json');
+const config = JSON.parse(configFile);
+
+accepted_audiences = config.accepted_audiences;
+accepted_issuers = config.accepted_issuers;
+
+const defaultdb = config.database.database_name;
+
+
+
 
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
@@ -27,19 +42,6 @@ module.exports = function (app, connection) {
   const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
   
-  
-  
-  
-  // Create table if it doesn't exist
-//  const createTable = `CREATE TABLE IF NOT EXISTS messages (
- //                       id INTEGER PRIMARY KEY AUTOINCREMENT,
- //                       userid TEXT, browser_id, localtime, utc ,url TEXT NOT NULL);`;
-  
-//  db.run(createTable, [], (err) => {
-//    if (err) {
-//      console.error(err.message);
-//    }
-//  });
   
 
 // JSON Schema
@@ -140,7 +142,7 @@ app.post('/plugin_user_delete_click', (req, res) => {
   }
 
   // delete from database
-  const sql = 'DELETE FROM CybotixDB.clickdata_tb WHERE browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
+  const sql = 'DELETE FROM '+defaultdb+'.clickdata_tb WHERE browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
 
   const values = [req.body.browser_id ,req.body.id];
   log.info(sql);
@@ -182,7 +184,7 @@ app.post('/plugin_user_post_click', (req, res) => {
    //const sql = 'INSERT INTO messages (url, browser_id, utc, localtime) VALUES (?,?,?,?)';
   const utc = new Date().toISOString();
   const values = [req.body.url, req.body.browser_id ,utc, req.body.localtime];
-  const sql = 'INSERT INTO CybotixDB.clickdata_tb (url, browser_id,uuid, utc, local_time) VALUES ("'+req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
+  const sql = 'INSERT INTO '+defaultdb+'.clickdata_tb (url, browser_id,uuid, utc, local_time) VALUES ("'+req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
   
   log.info("SQL 1");
   log.info(sql);
@@ -240,10 +242,12 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
     //const browser_id = [req.body.browser_id];
     //log.info(browser_id);
 //    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
-    const sql = 'SELECT uuid,utc, local_time, url FROM CybotixDB.clickdata_tb WHERE browser_id = "'+installationUniqueId+'" ';
+    const sql = 'SELECT uuid,utc, local_time, url FROM '+defaultdb+'.clickdata_tb WHERE browser_id = "'+installationUniqueId+'" ';
     log.info(sql);
+    console.log(sql)
     connection.query(sql, installationUniqueId, (err, rows) => {
         if (err) {
+          console.log(err);
           return res.status(500).json({ error: 'Database error' });
         }
     log.info(rows);
@@ -258,3 +262,27 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
 
 
 }
+
+
+
+function isPlatformTokenRawStructureValid(token) {
+console.debug("isPlatformTokenStructureValid");
+const regExpValidPlatformToken = new RegExp(/^[a-zA-Z0-9_\.\-_=]{100,2000}$/);
+if (regExpValidPlatformToken.test(token)) {
+  return true
+} else {
+  return false;
+}
+}
+
+
+function isDataAccessTokenRawStructureValid(platform_token_payload, token) {
+  console.debug("isDataAccessTokenStructureValid");
+  const regExpValidDataAccessToken = new RegExp(/^[a-zA-Z0-9_\.\-_=]{100,2000}$/);
+  if (regExpValidDataAccessToken.test(token)) {
+    return true
+  } else {
+    return false;
+  }
+    }
+  

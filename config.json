@@ -1,0 +1,40 @@
+{
+    "database": {
+        "host": "myrdsinstance.c4fxi8hjddcq.eu-west-1.rds.amazonaws.com",
+        "port": "3306",
+        "user": "sqluser",
+        "password": "password",
+        "database_name": "CybotixDB"
+    },
+    "accepted_audiences": {
+        "Cybotix": 1,
+        "cybotix-personal-data-commander": 1,
+        "http://api-dev.cybotix.no/data": 1,
+        "https://api.cybotix.no/development/data": 1
+    },
+    "accepted_issuers": {
+        "https://cybotix.no": 1,
+        "https://api-dev.cybotix.no": 1,
+        "http://api-dev.cybotix.no/data": 1,
+        "https://api.cybotix.no/development/data": 1
+    },
+    "datagrant_tokens":{"accepted_audiences": {
+        "Cybotix": 1,
+        "cybotix-personal-data-commander": 1,
+        "http://api-dev.cybotix.no/data": 1,
+        "https://api.cybotix.no/development/data": 1
+    },
+    "accepted_issuers": {
+        "https://cybotix.no": 1,
+        "https://api-dev.cybotix.no": 1,
+        "http://api-dev.cybotix.no/data": 1,
+        "https://api.cybotix.no/development/data": 1
+    }},
+    "port": 3000,
+    "issuer": "https://api-dev.cybotix.no",
+    "default_audience": "Cybotix",
+    "data_access_token_audience": { "clickstreamdata": "http://api-dev.cybotix.no/data"},
+    "signing_key":"./keys/cybotix.private_key.pem",
+    "signature_validation_key":"-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJtdG5CNDrDFkgBrpVXYnzM+vv09q\nATno9Wd954UM62R0bov15Z1c8fVODhtxZu+7viimjwVXiHlZLYdjj0WY2g==\n-----END PUBLIC KEY-----"
+
+}

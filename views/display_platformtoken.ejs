@@ -11,10 +11,18 @@
 <p><strong>Encoded:</strong> <%= token %></p>
 
 <h2>Decoded JWT:</h2>
+<h3>Payload:</h3>
+<ul>
+  <% for(let key in parsedPayload) { %>
+    <li><strong><%= key %>:</strong> <%= parsedPayload[key] %></li>
+  <% } %>
+</ul>
 <p><strong>Header:</strong> <%= decodedHeader %></p>
-<p><strong>Payload:</strong> <%= decodedPayload %></p>
+
 <p><strong>Signature:</strong> <%= signature %></p>
 
+Validate the signature with the public key below
+<pre><%= publicKey %></pre>
 <h2>Instructions:</h2>
 <ol>
     <li>To verify the token:</li>

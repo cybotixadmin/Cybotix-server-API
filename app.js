@@ -4,7 +4,11 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
-const { v4: uuidv4 } = require('uuid');
+
+const { 
+  v1: uuidv1,
+  v4: uuidv4,
+} = require('uuid');
 
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
@@ -28,13 +32,20 @@ const log = bunyan.createLogger({
 });
 
 
-log.info('My App');
+log.info('Cybotix API App');
 
 const njwt = require("njwt");
 const jsonwebtoken = require('jsonwebtoken');
 
 const secureRandom = require("secure-random");
 const formidable = require("formidable");
+
+
+// Read the configuration file once and store the data in memory
+const configFile = fs.readFileSync('./config.json');
+const config = JSON.parse(configFile);
+
+
 //const multer = require('multer');
 //const storage = multer.memoryStorage();  // Store the file in memory
 //const upload = multer({ storage: storage });
@@ -68,17 +79,19 @@ app.delete('/products/:id', cors(), function (req, res, next) {
   res.json({msg: 'This is CORS-enabled for all origins!'})
 });
 
+
 var connection = mysql.createConnection({
-  host: "myrdsinstance.c4fxi8hjddcq.eu-west-1.rds.amazonaws.com",
-  port: "3306",
-  user: "sqluser",
-  password: "password"
+  host: config.database.host,
+  port: config.database.port,
+  user: config.database.user,
+  password: config.database.password,
 });
 
 
 require('./routes/plugin/click_data')(app,connection);
 require('./routes/plugin/data_agreements')(app,connection);
 require('./routes/plugin/tokens')(app,connection);
+require('./routes/data/click_history')(app,connection);
 
 
 // Serve static files from the "public" directory
