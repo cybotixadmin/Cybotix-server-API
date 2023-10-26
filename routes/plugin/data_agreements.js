@@ -192,7 +192,6 @@ module.exports = function (app, connection) {
 
         } catch (err) {
             console.log(err);
-
         }
         console.log("adding agreement");
         console.log(JSON.stringify(req.body));

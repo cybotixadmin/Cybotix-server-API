@@ -517,13 +517,13 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
 
     console.log("rawRestrictions(decoded): " + restrictions);
 
-    var subject = {
+    var data_subject = {
         installationUniqueId: installationUniqueId
     };
     if (userid) {
-        subject.userid = "user";
+        data_subject.userid = "user";
     }
-    console.log(subject);
+    
 
     // lookup existing data agreements to find the duration time for this access token
     // the agreemant especifiesnot only the scope of the data that may be accessed.
@@ -558,31 +558,43 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
 
     console.log(JSON.parse(rawDataRequest));
     console.log("4.4.3 ");
-    console.log((JSON.parse(rawDataRequest)).requests);
+    const grants = JSON.parse(rawDataRequest).requests;
+    console.log(grants);
     console.log("4.4.5 ");
     console.log(JSON.stringify((JSON.parse(rawDataRequest)).requests));
     console.log("4.4.6 ");
     console.log(str2base64(JSON.stringify((JSON.parse(rawDataRequest)).requests)));
-    const data_grant = str2base64(JSON.stringify((JSON.parse(rawDataRequest)).requests));
+    const data_grant = {
+        data_subject: data_subject,
+        grants: grants
+
+    };
+
+    console.log("data_grant")
+    console.log(data_grant)
 
     console.log("4.4.7 ");
     var token;
     const dataaccess_token_payload = {
         version: "1.0", // Version of the token
         iss: issuer,
-        sub: Buffer.from(JSON.stringify(subject)).toString('base64'), // who the token belongs to
+        sub: platformTokenPayload.sub, // who the token belongs to
         aud: config.data_access_token_audience.clickstreamdata, // Audience of the token
         jti: uuidv4(),
         iat: Math.floor(Date.now() / 1000), // Current timestamp
         nbf: Math.floor(Date.now() / 1000), // Current timestamp
         exp: expiration,
-        grant: data_grant
+        grant: Buffer.from(JSON.stringify(data_grant)).toString('base64')
     };
     const cybotixkey = fs.readFileSync(config.signing_key);
     console.log("cybotixkey");
+
+    console.log("" + platformTokenPayload.sub);
+    console.log("" + platformTokenPayload.sub);
+
     console.log(cybotixkey);
-    console.log("6.1.0. dataaccess_token_payload");
-    console.log(dataaccess_token_payload);
+    console.log("platformTokenPayload.    sub: " + platformTokenPayload.sub);
+    console.log("dataaccess_token_payload.sub: " + dataaccess_token_payload.sub);
     console.log("6.1.1");
     //Buffer.from(rawData).toString('base64')
     // const token_payload_enc = str2base64((JSON.stringify(token_payload)));
@@ -603,7 +615,12 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
 
 }
 
-function str2base64(str) {
+function base64decode(data) {
+    return atob(data);
+  }
+
+
+function base64encode(str) {
     return btoa(str);
 }
 
