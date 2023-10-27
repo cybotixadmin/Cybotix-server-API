@@ -563,7 +563,7 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
     console.log("4.4.5 ");
     console.log(JSON.stringify((JSON.parse(rawDataRequest)).requests));
     console.log("4.4.6 ");
-    console.log(str2base64(JSON.stringify((JSON.parse(rawDataRequest)).requests)));
+    console.log(base64encode(JSON.stringify((JSON.parse(rawDataRequest)).requests)));
     const data_grant = {
         data_subject: data_subject,
         grants: grants

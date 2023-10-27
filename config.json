@@ -4,7 +4,8 @@
         "port": "3306",
         "user": "sqluser",
         "password": "password",
-        "database_name": "CybotixDB"
+        "database_name": "CybotixDB",
+        "agreements_table": "data_agreements_tb"
     },
     "accepted_audiences": {
         "Cybotix": 1,
@@ -33,7 +34,7 @@
     "port": 3000,
     "issuer": "https://api-dev.cybotix.no",
     "default_audience": "Cybotix",
-    "data_access_token_audience": { "clickstreamdata": "http://api-dev.cybotix.no/data"},
+    "data_access_token_audience": { "clickstreamdata": "http://localhost:3000/data"},
     "signing_key":"./keys/cybotix.private_key.pem",
     "signature_validation_key":"-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJtdG5CNDrDFkgBrpVXYnzM+vv09q\nATno9Wd954UM62R0bov15Z1c8fVODhtxZu+7viimjwVXiHlZLYdjj0WY2g==\n-----END PUBLIC KEY-----"
 

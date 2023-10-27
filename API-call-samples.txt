@@ -59,23 +59,30 @@ return data
 # call to delete data agreement
 
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"mhoppoobobddnonppblechkphekniflb", "userid":"","uuid":"7"}' http://localhost:3000/plugin_user_delete_data_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{ "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' http://localhost:3000/plugin_user_delete_data_agreement
 
 
 # call to read data agreement 
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_read_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_read_data_agreement
 
 
-# call to read all data agreements
+# call to read all data agreements for a user/browserid
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":""}' http://localhost:3000/plugin_user_read_all_agreements
+curl -X GET -H "Content-Type: application/json"   -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  http://localhost:3000/plugin_user_read_all_data_agreements
 
 
 
 # call to check validity of data agreement ID
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_validate_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' http://localhost:3000/plugin_user_validate_agreement
+
+
+# call to suspend/activate data agreement 
+# setting activestatus to "1" (active) or "0" (disabled)
+
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '{  "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6", "activestatus":"1"}' http://localhost:3000/plugin_user_set_agreement_active_status
+
 
 
 
@@ -121,7 +128,7 @@ curl 'http://localhost:3000/data' \
   --compressed
 
 
-curl 'http://api-dev.cybotix.no:3000/data' \
+curl 'http://localhost:3000/data' \
   -H 'X_HTTP_CYBOTIX_PLATFORM_TOKEN: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoiMS4wIiwiaXNzIjoiaHR0cHM6Ly9hcGktZGV2LmN5Ym90aXgubm8iLCJzdWIiOiJjb3JwIGluYyIsImF1ZCI6IkN5Ym90aXgiLCJrZXkiOlsiLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS1cclxuTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFwVElCM1Z0VmhDTUFKZ1hlZlc1T1xyXG4wNk4zVU5YY0VqSzNYYTNSd0Z1UDU2eDRTc2h5b05CVDFzOWtaY09wTGI5Wm5zWWxhMlVFYlRVSmpRT091T1JhXHJcbmFYT3hEbHF0ekVYc1BienNxTkhJRTZBVm1RTWFYK041VnlBVjBFM3IwaHNUL2lGUmJ5VXZSWTRGanpHMTdKeWVcclxuU0U2aWpveHpGNVpSN1RMdzgxZm1KUFIreTdFamtKQWEvNG54NWNEa3ZlNFdhZ0YyVVFlV3NzVG52RjlQUHNHelxyXG5RaktJZEpNYTdXbzF5RWJKSW5oUGUzWVNvOER4bnd0RzRHMnFYR29KK1FmeXRpTW1BeDZwL2puNW9vUCtzaWoxXHJcbmRydHRsS3BNRWg4WmtQZnpnNTNQYWt4OFdvOWpxWmNjOU1wYTZueVo4WmEwOVdWMWFyMzRhTXNPQ2JLdGFPSjZcclxuR1FJREFRQUJcclxuLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tXHJcbiJdLCJqdGkiOiJhOTRhMzFkOC0wMDA5LTQwMzMtYTUwZi1kMWM3ZWUzYWU1OTAiLCJpYXQiOjE2OTgyNjM4NjUsIm5iZiI6MTY5ODI2Mzg2NSwiZXhwIjoxNzAwODU1ODY1fQ.B2SfzzvvJlqAKXFTuyy1FXwXWH9JPRJgFPCJ441vHw2JBnSDJApDtuE-ZzV2hPECjgEld58V-cgEmVXwq8oB8A' \
   -H 'X_HTTP_CYBOTIX_DATA_ACCESSTOKEN: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoiMS4wIiwiaXNzIjoiaHR0cHM6Ly9hcGktZGV2LmN5Ym90aXgubm8iLCJzdWIiOiJjb3JwIGluYyIsImF1ZCI6Imh0dHA6Ly9hcGktZGV2LmN5Ym90aXgubm8vZGF0YSIsImp0aSI6IjA4MDgyM2U3LWUzM2YtNDE4Mi04MDc3LTBmYThhYjU3Y2NiMCIsImlhdCI6MTY5ODI2NDAzMSwibmJmIjoxNjk4MjY0MDMxLCJleHAiOjE2OTg1MjMyMzEsImdyYW50IjoiZXlKa1lYUmhYM04xWW1wbFkzUWlPbnNpYVc1emRHRnNiR0YwYVc5dVZXNXBjWFZsU1dRaU9pSTJOVGsyWXpnMFlpMDFORFJqTFRrNFpUTXRObU5sTWkwNFkyTmpNV0l6TXpRd05UVWlmU3dpWjNKaGJuUnpJanBiZXlKeVpYRjFaWE4wZEhsd1pTSTZJbU5zYVdOcmFHbHpkRzl5ZVNJc0luSmxjWFZsYzNSa1pYUmhhV3h6SWpwN0luUnBiV1VpT2lKdWIzY3RNV2h5SWl3aVptbHNkR1Z5SWpvaUxpcDBiM0F1S2lKOWZTeDdJbkpsY1hWbGMzUjBlWEJsSWpvaVkyeHBZMnRvYVhOMGIzSjVJaXdpY21WeGRXVnpkR1JsZEdGcGJITWlPbnNpZEdsdFpTSTZJbTV2ZHkweGFISWlMQ0ptYVd4MFpYSWlPaUl1S25SdmNDNHFJbjE5WFgwPSJ9.ignPOzjPkDw-JCivoEFBAVMKC1fIbooeU6baEKEvDuZaW4l2V_sC-3gHW9Ftcr3zvuix3RS4nEiURRnAnW2Hfg' \
   -H 'X_HTTP_CYBOTIX_DATA_REQUEST: eyJtZXNzYWdldGV4dCI6IlEyRnVJSGRsSUhObFpTQmNibmx2ZFhJZ1kyeHBZMnNnYUdsemRHOXllU0JtYjNJZ2RHaGxJSEJoYzNRZ2FHOTFjajhLIiwicmVxdWVzdHMiOlt7InJlcXVlc3R0eXBlIjoiY2xpY2toaXN0b3J5IiwicmVxdWVzdGRldGFpbHMiOnsidGltZSI6Im5vdy0xaHIiLCJmaWx0ZXIiOiIuKnRvcC4qIn19LHsicmVxdWVzdHR5cGUiOiJjbGlja2hpc3RvcnkiLCJyZXF1ZXN0ZGV0YWlscyI6eyJ0aW1lIjoibm93LTFociIsImZpbHRlciI6Ii4qdG9wLioifX1dfQo=' \

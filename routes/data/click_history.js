@@ -116,13 +116,12 @@ module.exports = function (app, connection) {
                     if (platformTokenPayload.sub == datagrantTokenPayload.sub) {
                         console.log("datagrant token belong to the same owner as the platform token")
 
-                       
                         // read the grants from the data access token
                         // translate them into an SQL filter and user this to filter the data, using this as a "screen" to contains the maximum allowed data access.
                         // There may or may not be a separate data requests, if so, this is included as well, to further narrow the data scope.
 
 
-                        var sql_filter = "";                   
+                        var sql_filter = "";
 
                         console.log("grant 1:");
                         console.log(datagrantTokenPayload.grant);
@@ -131,27 +130,27 @@ module.exports = function (app, connection) {
                         console.log(JSON.parse(base64decode(datagrantTokenPayload.grant)));
                         console.log((JSON.parse(base64decode(datagrantTokenPayload.grant))).grants);
                         const grant = (JSON.parse(base64decode(datagrantTokenPayload.grant)));
-                        console.log("grants 2: " );
-console.log(grant);
+                        console.log("grants 2: ");
+                        console.log(grant);
 
                         const grants = (JSON.parse(base64decode(datagrantTokenPayload.grant)).grants);
-                        console.log("grants 3: " );
+                        console.log("grants 3: ");
 
                         console.log(grants);
-var i=0;
-                        grants.forEach(grant => { 
-                          console.log(i);
-console.log("grant---: " + grant);
-console.log(grant);
-console.log(requestJSONToSQL(grant));
+                        var i = 0;
+                        grants.forEach(grant => {
+                            console.log(i);
+                            console.log("grant---: " + grant);
+                            console.log(grant);
+                            console.log(requestJSONToSQL(grant));
 
-if (i>0){
-  sql_filter = sql_filter + " OR ";
+                            if (i > 0) {
+                                sql_filter = sql_filter + " OR ";
 
-}
-sql_filter = sql_filter + " ("+ requestJSONToSQL(grant) + ") ";
-console.log("SQL filter from grant request" + requestJSONToSQL(grant));
-i++;
+                            }
+                            sql_filter = sql_filter + " (" + requestJSONToSQL(grant) + ") ";
+                            console.log("SQL filter from grant request" + requestJSONToSQL(grant));
+                            i++;
                         });
                         console.log("sql_filter 2: " + sql_filter);
                         // check if is in platform token matches the id in the dataacces token. Do this check first, since this is a computationally "cheaper" test.
@@ -167,31 +166,31 @@ i++;
                         // get userid from ... field in data access token
                         var userid_filter = "";
 
-                        console.log("user:"+ grant.data_subject.userid);
-                        if(grant.data_subject.userid != undefined){
-                          userid_filter = " userid='" + grant.data_subject.userid + "' ";
-                        }else{
-                          console.log("no userid in data access token");
+                        console.log("user:" + grant.data_subject.userid);
+                        if (grant.data_subject.userid != undefined) {
+                            userid_filter = " userid='" + grant.data_subject.userid + "' ";
+                        } else {
+                            console.log("no userid in data access token");
                         }
-                        
+
                         // get browserid from ... field in data access token
                         var browserid_filter = "";
-                        console.log("user:"+ grant.data_subject.installationUniqueId);
-if(grant.data_subject.installationUniqueId  != undefined){
-  browserid_filter = " browser_id='" + grant.data_subject.installationUniqueId + "' ";
-}else{
-  console.log("no browserid in data access token");
-}
-console.log(userid_filter != "");
-console.log(browserid_filter != "");
-if (userid_filter != "" && browserid_filter != "") {
-  console.log("both filters");
-sql_filter = sql_filter +" AND " + userid_filter + " AND " + browserid_filter;
-}else if (userid_filter != "" && browserid_filter == "") {
-sql_filter = sql_filter +" AND " +  userid_filter;
-}else if (userid_filter == "" && browserid_filter != "") {
-sql_filter = sql_filter +" AND " + browserid_filter;
-}
+                        console.log("user:" + grant.data_subject.installationUniqueId);
+                        if (grant.data_subject.installationUniqueId != undefined) {
+                            browserid_filter = " browser_id='" + grant.data_subject.installationUniqueId + "' ";
+                        } else {
+                            console.log("no browserid in data access token");
+                        }
+                        console.log(userid_filter != "");
+                        console.log(browserid_filter != "");
+                        if (userid_filter != "" && browserid_filter != "") {
+                            console.log("both filters");
+                            sql_filter = sql_filter + " AND " + userid_filter + " AND " + browserid_filter;
+                        } else if (userid_filter != "" && browserid_filter == "") {
+                            sql_filter = sql_filter + " AND " + userid_filter;
+                        } else if (userid_filter == "" && browserid_filter != "") {
+                            sql_filter = sql_filter + " AND " + browserid_filter;
+                        }
 
                         // look for time range in data access token
                         var from;
@@ -224,15 +223,13 @@ sql_filter = sql_filter +" AND " + browserid_filter;
                                 log.info(rows)
                                 res.status(200).json(rows);
                             } else {
-                                res.status(404).json({
-                                    error: 'Message not found'
+                                res.status(200).json({
+                                    status: '0'
                                 });
                             }
                         });
-
                     } else {
                         console.debug("datagrant token does not match platform token");
-
                     }
 
                 } else {}
@@ -253,8 +250,8 @@ sql_filter = sql_filter +" AND " + browserid_filter;
 function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
     try {
 
-//      const token = rawDatagrantToken.replace(/-/g, '+').replace(/_/g, '/');
-      const token = rawDatagrantToken;
+        //      const token = rawDatagrantToken.replace(/-/g, '+').replace(/_/g, '/');
+        const token = rawDatagrantToken;
 
         function isDatagrantTokenPayloadDataValid(payload) {
             console.log("isDatagrantTokenPayloadDataValid:");
@@ -330,19 +327,19 @@ function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
         if (isDataAccessTokenRawStructureValid(token)) {
 
             const datagrantTokenPayload = decodedDataGrantTokenSignatureValid(token);
-                if (datagrantTokenPayload) {
+            if (datagrantTokenPayload) {
 
-                    // check for possible revocation of datagrant token
-                    if (checkTokenRevokationIfRevocationEndPointIsPresent) {}
-                    else {
-                        return datagrantTokenPayload;
-                    }
-                } else {
-                  console.log("failed siganture check");
-                    return false;
+                // check for possible revocation of datagrant token
+                if (checkTokenRevokationIfRevocationEndPointIsPresent) {}
+                else {
+                    return datagrantTokenPayload;
                 }
+            } else {
+                console.log("failed siganture check");
+                return false;
+            }
         } else {
-          console.log("not a valid JWT")
+            console.log("not a valid JWT")
             return false;
         }
 
@@ -352,16 +349,15 @@ function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
     }
 }
 
-
 function base64decode(data) {
-  return atob(data);
-  
+    return atob(data);
+
 }
 
 function getValidatedPlatformTokenPayload(rawPlatformToken) {
     try {
- //     const token = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/');
-      const token = rawPlatformToken;
+        //     const token = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/');
+        const token = rawPlatformToken;
         /*
         Do basic "sanity"-check on the JWT holding the platform token
         That it is of an appropriate length and that it is base64 encoded, and has the right number of delimiters
@@ -428,27 +424,27 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
 
         if (isPlatformTokenRawStructureValid(token)) {
             const platformTokenPayload = decodedPlatformtokenSignatureValid(token);
-                if (platformTokenPayload) {
-                    console.log("signature is valid and content is decoded as: " + platformTokenPayload);
+            if (platformTokenPayload) {
+                console.log("signature is valid and content is decoded as: " + platformTokenPayload);
 
-                    // check the content of the platform token
-                    if (isPlatformTokenPayloadDataValid(platformTokenPayload)) {
-                        if (checkTokenRevokationIfRevocationEndPointIsPresent) {
-                            // look for token revocation endpoint in the JWT itself
+                // check the content of the platform token
+                if (isPlatformTokenPayloadDataValid(platformTokenPayload)) {
+                    if (checkTokenRevokationIfRevocationEndPointIsPresent) {
+                        // look for token revocation endpoint in the JWT itself
 
-                        } else {
-
-                            return platformTokenPayload;
-                        }
                     } else {
-                        console.log("invalid platform token content");
-                        return false;
-                    }
 
+                        return platformTokenPayload;
+                    }
                 } else {
-                    console.log("3.8. platform token signature invalid");
-                    //return res.status(401).json({ error: 'Invalid platform token signature' });
+                    console.log("invalid platform token content");
+                    return false;
                 }
+
+            } else {
+                console.log("3.8. platform token signature invalid");
+                //return res.status(401).json({ error: 'Invalid platform token signature' });
+            }
 
         } else {
             console.log("invalid platform token structure");
@@ -462,26 +458,26 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
 }
 
 /**
-* convert datagrant  to a SQL filter statement  
-*/
+ * convert datagrant  to a SQL filter statement
+ */
 function requestJSONToSQL(jsonObj) {
-  if (jsonObj.requesttype !== 'clickhistory') {
-      throw new Error('Invalid request type');
-  }
+    if (jsonObj.requesttype !== 'clickhistory') {
+        throw new Error('Invalid request type');
+    }
 
-  let timeframe = jsonObj.requestdetails.time;
-  let filter = jsonObj.requestdetails.filter;
+    let timeframe = jsonObj.requestdetails.time;
+    let filter = jsonObj.requestdetails.filter;
 
-  if (timeframe !== "now-1hr") {
-      throw new Error('Unsupported timeframe');
-  }
+    if (timeframe !== "now-1hr") {
+        throw new Error('Unsupported timeframe');
+    }
 
-  // Convert the JSON timeframe and filter into SQL WHERE conditions
-  let timeCondition = `utc > DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
-  let filterCondition = `url REGEXP '${filter}'`;
+    // Convert the JSON timeframe and filter into SQL WHERE conditions
+    let timeCondition = `utc > DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
+    let filterCondition = `url REGEXP '${filter}'`;
 
-  // Construct the final SQL statement
-  let sqlfilter = timeCondition + " AND " + filterCondition;
+    // Construct the final SQL statement
+    let sqlfilter = timeCondition + " AND " + filterCondition;
 
-  return sqlfilter;
+    return sqlfilter;
 }

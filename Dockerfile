@@ -1,19 +1,26 @@
-FROM node:18
 
-# Create app directory
+# alt 1 Use Node.js image
+FROM node:16
+
+# alt 2 slimmed down image
+#FROM gcr.io/distroless/nodejs
+
+
+# Create and set a working directory
 WORKDIR /usr/src/app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
+# Copy package.json and package-lock.json files
 COPY package*.json ./
 
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --omit=dev
+# Install dependencies
+RUN npm install 
 
-# Bundle app source
+# Copy the app source code
 COPY . .
 
-EXPOSE 8080
-CMD [ "node", "server.js" ]
+# Expose the port the app will run on
+EXPOSE 3000
+
+# Command to run the application
+CMD ["node", "app.js"]
+

@@ -17,10 +17,14 @@ const config = JSON.parse(configFile);
 
 const defaultdb = config.database.database_name;
 
+const agreements_table = config.database.agreements_table;
+
 const valid_audience_values = {
     "cybotix-personal-data-commander": "1",
     "Cybotix": "1"
 };
+
+const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
@@ -112,27 +116,49 @@ module.exports = function (app, connection) {
         required: ['browser_id', 'userid'],
     };
 
+    const plugin_user_set_agreement_active_status_json_schema = {
+        type: "object",
+        properties: {
+            agreement_id: {
+                type: 'string',
+                "pattern": "^[A-Za-z0-9\-\_\.]{10,100}$",
+                "minLength": 10,
+                "maxLength": 100
+            },
+            activestatus: {
+                type: 'string',
+                "pattern": "^[01]$",
+                "minLength": 0,
+                "maxLength": 1
+            }
+        },
+        required: ['agreement_id', 'activestatus'],
+    };
+
     const plugin_user_delete_data_agreement_json_schema = {
         type: "object",
         properties: {
-            uuid: {
+            agreement_id: {
                 type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            userid: {
-                type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            browser_id: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9]{4,}$",
+                "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
                 "minLength": 4,
                 "maxLength": 60
             }
         },
-        required: ['browser_id', 'userid', 'uuid'],
+        required: ['agreement_id'],
+    };
+
+    const plugin_user_read_data_agreement_json_schema = {
+        type: "object",
+        properties: {
+            agreement_id: {
+                type: 'string',
+                "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+                "minLength": 4,
+                "maxLength": 60
+            }
+        },
+        required: ['agreement_id'],
     };
 
     const plugin_user_check_request_against_data_agreements_json_schema = {
@@ -153,8 +179,6 @@ module.exports = function (app, connection) {
     };
 
     const ajv = new Ajv();
-
-    const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
     /**
      * {
@@ -179,19 +203,12 @@ module.exports = function (app, connection) {
                 error: 'Invalid data format'
             });
         }
-        var installationUniqueId = "";
-        try {
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
 
-            if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
-                installationUniqueId = req.header("installationUniqueId");
-                console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
-            } else {
-                console.log("an invalid installationUniqueId found in header");
-
-            }
-
-        } catch (err) {
-            console.log(err);
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
         }
         console.log("adding agreement");
         console.log(JSON.stringify(req.body));
@@ -235,14 +252,8 @@ module.exports = function (app, connection) {
             log.debug(original_request);
             //       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
             const utc = new Date().toISOString();
-            //const values = [req.body.browser_id ,uuid , req.body.agreement_json.createtime , utc  , JSON.stringify(json)];
-            //console.log(values);
-            var sql;
-            //  if (data_grants === "undefined"){
-            //    sql = 'INSERT INTO '+defaultdb+'.data_agreements_tb ( browserid, uuid, createtime, lastmodifiedtime,active,  original_request ) VALUES("'+installationUniqueId+'","'+uuid+'", now(), now(),1,' + "'"+ original_request+ "'"+')';
-            //  }else{
-            sql = 'INSERT INTO ' + defaultdb + '.data_agreements_tb ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime,active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
-            //  }
+
+            var sql = 'INSERT INTO ' + defaultdb + '.' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime,active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
 
             console.log("SQL 2");
             console.log(sql);
@@ -280,7 +291,15 @@ module.exports = function (app, connection) {
         console.log(req.rawHeaders);
 
         var isCoveredByAgreement = false;
-        var installationUniqueId = "";
+
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
+
         try {
 
             if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
@@ -296,7 +315,7 @@ module.exports = function (app, connection) {
                     log.debug("counterparty_id: " + counterparty_id);
 
                     //
-                    const sql = 'SELECT * FROM ' + defaultdb + '.data_agreements_tb WHERE counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
+                    const sql = 'SELECT * FROM ' + defaultdb + '.' + agreements_table + ' WHERE counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
 
                     console.log("SQL 2.1");
                     console.log(sql);
@@ -315,7 +334,7 @@ module.exports = function (app, connection) {
                             // get request
                             const rawDataRequest = req.get('X_HTTP_CYBOTIX_DATA_REQUEST');
                             log.debug("rawDataRequest: " + rawDataRequest);
-                            const dataRequest = JSON.parse(base642str(rawDataRequest));
+                            const dataRequest = JSON.parse(base64decode(rawDataRequest));
                             for (let j = 0; j < dataRequest.requests.length; j++) {
                                 // is this request covered ?
                                 // this process must be consdiereably improved, checking the actual details individually
@@ -387,8 +406,17 @@ module.exports = function (app, connection) {
     });
 
     app.post('/plugin_user_validate_data_agreement', (req, res) => {
+        console.log("/plugin_user_validate_data_agreement");
         console.log(req.method);
         console.log(req.rawHeaders);
+
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
         // Validate JSON against schema
         const valid = ajv.validate(plugin_user_validate_data_agreement_json_schema, req.body);
 
@@ -399,7 +427,7 @@ module.exports = function (app, connection) {
         }
 
         // delete from SQLite database
-        const sql = 'SELECT active FROM data_agreements_tb WHERE browser_id = ? ';
+        const sql = 'SELECT active FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id = ? ';
 
         //  const sql = "DELETE FROM messages WHERE browser_id='" +req.body.browser_id+ "' AND id=" +req.body.id+ "";
 
@@ -419,11 +447,18 @@ module.exports = function (app, connection) {
         });
     });
 
-    app.post('/plugin_user_delete_data_agreement', (req, res) => {
+    app.post('/plugin_user_set_agreement_active_status', (req, res) => {
         console.log(req.method);
         console.log(req.rawHeaders);
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
         // Validate JSON against schema
-        const valid = ajv.validate(plugin_user_delete_data_agreement_json_schema, req.body);
+        const valid = ajv.validate(plugin_user_set_agreement_active_status_json_schema, req.body);
 
         if (!valid) {
             return res.status(400).json({
@@ -432,13 +467,14 @@ module.exports = function (app, connection) {
         }
 
         // delete from database
-        const sql = 'DELETE FROM ' + defaultdb + '.data_agreements WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
-
-        const values = [req.body.browser_id, req.body.uuid];
+        const sql = 'UPDATE ' + defaultdb + '.' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
         console.log(sql);
-        console.log(values);
+        //   const values = [req.body.browser_id, req.body.uuid];
+        // console.log(sql);
+        //     console.log(values);
 
-        all_data_agreements_db.run(sql, values, function (err) {
+        connection.query(sql, function (err, result) {
+            //       all_data_agreements_db.run(sql, values, function (err) {
             if (err) {
                 return res.status(500).json({
                     error: 'Database error'
@@ -450,12 +486,18 @@ module.exports = function (app, connection) {
         });
     });
 
-    app.post('/plugin_user_read_all_data_agreements', (req, res) => {
-        //  console.log(req.method);
-        //  console.log(req.rawHeaders);
-        //  console.log(req.body);
+    app.post('/plugin_user_delete_data_agreement', (req, res) => {
+        console.log(req.method);
+        console.log(req.rawHeaders);
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
         // Validate JSON against schema
-        const valid = ajv.validate(plugin_user_read_all_agreements_json_schema, req.body);
+        const valid = ajv.validate(plugin_user_delete_data_agreement_json_schema, req.body);
 
         if (!valid) {
             return res.status(400).json({
@@ -463,25 +505,103 @@ module.exports = function (app, connection) {
             });
         }
 
-        // Read from SQLite database
-        const browser_id = [req.body.browser_id];
-        const sql = 'SELECT * FROM all_data_agreements WHERE browser_id = ? ';
-        all_data_agreements_db.all(sql, browser_id, (err, rows) => {
+        // delete from database
+        const sql = 'DELETE FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
+        console.log(sql);
+
+        connection.query(sql, function (err, result) {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({
+                    error: 'Database error'
+                });
+            }
+            res.status(201).json({
+                status: 0
+            });
+        });
+    });
+
+    app.post('/plugin_user_read_data_agreement', (req, res) => {
+        console.log(req.method);
+        console.log(req.rawHeaders);
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
+        // Validate JSON against schema
+        const valid = ajv.validate(plugin_user_read_data_agreement_json_schema, req.body);
+
+        if (!valid) {
+            return res.status(400).json({
+                error: 'Invalid data format'
+            });
+        }
+
+        // delete from database
+        const sql = 'SELECT * FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
+        console.log(sql);
+
+        connection.query(sql, function (err, result) {
+
             if (err) {
                 return res.status(500).json({
                     error: 'Database error'
                 });
             }
-            // console.log(rows);
-            if (rows.length > 0) {
-                console.log(rows)
-                res.status(200).json(rows);
+            // console.log(result);
+            if (result.length > 0) {
+                console.log(result)
+                res.status(200).json(result);
             } else {
                 res.status(404).json({
                     error: 'Message not found'
                 });
             }
         });
+    });
+
+    app.get('/plugin_user_read_all_data_agreements', (req, res) => {
+        try {
+            console.log('/plugin_user_read_all_data_agreements');
+            //  console.log(req.method);
+            //  console.log(req.rawHeaders);
+            //  console.log(req.body);
+            // Validate JSON against schema
+            var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+            if (!installationUniqueId) {
+                return res.status(400).json({
+                    error: 'Invalid installationUniqueId'
+                });
+            }
+
+            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, uuid, counterparty_id, data_grants, original_request FROM ' + defaultdb + '.' + agreements_table + ' WHERE browserid = "' + installationUniqueId + '"';
+            console.log(sql);
+            //        all_data_agreements_db.all(sql, browser_id, (err, rows) => {
+            connection.query(sql, function (err, result) {
+
+                if (err) {
+                    return res.status(500).json({
+                        error: 'Database error'
+                    });
+                }
+                // console.log(result);
+                if (result.length > 0) {
+                    console.log(result)
+                    res.status(200).json(result);
+                } else {
+                    res.status(404).json({
+                        error: 'Message not found'
+                    });
+                }
+            });
+        } catch (err) {
+            console.log(err);
+        }
     });
 
 }
@@ -535,7 +655,7 @@ function parseJWTbypassSignCheck(token, publicKeyPEM) {
     return new Promise(function (resolve, reject) {
 
         // bypass this pending work on JWKs
-        resolve(JSON.parse(base642str(parts[1].replace(/-/g, '+').replace(/_/g, '/'))));
+        resolve(JSON.parse(base64decode(parts[1].replace(/-/g, '+').replace(/_/g, '/'))));
 
     });
 }
@@ -544,6 +664,14 @@ function base642str(data) {
     let buff = new Buffer(data, 'base64');
     let text = buff.toString('ascii');
     return text;
+}
+
+function base64decode(data) {
+    return atob(data);
+}
+
+function base64encode(str) {
+    return btoa(str);
 }
 
 function validatePlatformToken(tokenPayload) {
@@ -578,4 +706,23 @@ function validatePlatformToken(tokenPayload) {
 
 function keyExists(key, obj) {
     return obj[key] !== undefined;
+}
+
+function getInstallationUniqueId(text) {
+
+    try {
+
+        if (regExpValidInstallationUniqueId.test(text)) {
+            installationUniqueId = text;
+            console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+            return installationUniqueId;
+        } else {
+            console.log("an invalid installationUniqueId found in header");
+            return false;
+        }
+
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
 }

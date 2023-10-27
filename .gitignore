@@ -12,4 +12,5 @@ lerna-debug.log*
 
 node_modules
 keys
+deployment
 
