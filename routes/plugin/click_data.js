@@ -14,7 +14,8 @@ accepted_issuers = config.accepted_issuers;
 
 const defaultdb = config.database.database_name;
 
-
+const clickdata_table = config.database.clickdata_table;
+const environment = config.environment;
 
 
 const bunyan = require('bunyan');
@@ -75,15 +76,11 @@ const plugin_user_post_click_json_schema = {
   const plugin_user_get_all_clicks_json_schema = {
       type: "object",
       properties: {
-          userid: { type: 'string',
+          pattern: { type: 'string',
           "minLength": 0,
-          "maxLength": 300 },
-          browser_id: { type: 'string',
-          "pattern": "^[A-Za-z0-9\-\_\.]{4,100}$",
-      "minLength": 4,
-      "maxLength": 60  }
+          "maxLength": 300 }
         },
-        required: ['browser_id','userid'],
+        required: [],
     };
   
   
@@ -92,19 +89,12 @@ const plugin_user_post_click_json_schema = {
   const plugin_user_delete_click_json_schema = {
       type: "object",
       properties: {
-          userid: { type: 'string',
-          "minLength": 0,
-          "maxLength": 300 },
-          browser_id: { type: 'string',
-      "pattern": "^[A-Za-z0-9\-\_\.]{4,100}$",
-      "minLength": 4,
-      "maxLength": 60  },
       uuid: { type: 'string',
       "pattern": "^[A-Za-z0-9\-\_\.]{10,100}$",
   "minLength": 1,
   "maxLength": 100  }
         },
-        required: ['browser_id','userid','uuid'],
+        required: ['uuid'],
     };
   
   const ajv = new Ajv();
@@ -116,13 +106,12 @@ const plugin_user_post_click_json_schema = {
 
 
 app.post('/plugin_user_delete_click', (req, res) => {
-    log.info('/plugin_user_delete_click');
-   // log.info(req.rawHeaders);
-  // Validate JSON against schema
-  var installationUniqueId = "";
   try {
+    log.info('/plugin_user_delete_click');
 
-   
+    // Validate JSON against schema
+  var installationUniqueId = "";
+
       if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
         installationUniqueId = req.header("installationUniqueId");
         log.info("a valid installationUniqueId found in header (" +installationUniqueId+")");
@@ -131,10 +120,6 @@ app.post('/plugin_user_delete_click', (req, res) => {
 
       }
 
-  } catch (err) {
-      log.info(err);
-
-  }
   const valid = ajv.validate(plugin_user_delete_click_json_schema, req.body);
 
   if (!valid) {
@@ -142,11 +127,10 @@ app.post('/plugin_user_delete_click', (req, res) => {
   }
 
   // delete from database
-  const sql = 'DELETE FROM '+defaultdb+'.clickdata_tb WHERE browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
+  const sql = 'DELETE FROM '+clickdata_table+' WHERE evironment="'+environment+'" AND browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
 
-  const values = [req.body.browser_id ,req.body.id];
   log.info(sql);
-  log.info(values);
+  
   connection.query(sql, function (err, result) {
   
         if (err) {
@@ -163,6 +147,11 @@ app.post('/plugin_user_delete_click', (req, res) => {
             res.status(404).json({});
         }
     });
+  } catch (err) {
+    log.info(err);
+
+}
+
 });
 
 
@@ -184,7 +173,7 @@ app.post('/plugin_user_post_click', (req, res) => {
    //const sql = 'INSERT INTO messages (url, browser_id, utc, localtime) VALUES (?,?,?,?)';
   const utc = new Date().toISOString();
   const values = [req.body.url, req.body.browser_id ,utc, req.body.localtime];
-  const sql = 'INSERT INTO '+defaultdb+'.clickdata_tb (url, browser_id,uuid, utc, local_time) VALUES ("'+req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
+  const sql = 'INSERT INTO '+clickdata_table+' (environment, url, browser_id,uuid, utc, local_time) VALUES ("'+environment + '", "' +req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
   
   log.info("SQL 1");
   log.info(sql);
@@ -213,14 +202,17 @@ app.post('/plugin_user_post_click', (req, res) => {
 });
 
 
-app.post('/plugin_user_get_all_clicks', (req, res) => {
+app.get('/plugin_user_get_all_clicks', (req, res) => {
+  try{
     log.info(req.method);
-    log.info(req.rawHeaders);
-    log.info(req.body);
     // Validate JSON against schema
     const valid = ajv.validate(plugin_user_get_all_clicks_json_schema, req.body);
     
     
+  if (!valid) {
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+
  
     var installationUniqueId = "";
     try {
@@ -238,11 +230,10 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
       return res.status(400).json({ error: 'Invalid data format' });
     }
 
+// TO BE IMPLEMENTED, using the option regexp pattern
+// at present all data is returned
     // Read from database
-    //const browser_id = [req.body.browser_id];
-    //log.info(browser_id);
-//    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
-    const sql = 'SELECT uuid,utc, local_time, url FROM '+defaultdb+'.clickdata_tb WHERE browser_id = "'+installationUniqueId+'" ';
+    const sql = 'SELECT uuid,utc, local_time, url FROM '+clickdata_table+' WHERE environment="'+environment+'" AND browser_id = "'+installationUniqueId+'" ';
     log.info(sql);
     console.log(sql)
     connection.query(sql, installationUniqueId, (err, rows) => {
@@ -258,8 +249,11 @@ app.post('/plugin_user_get_all_clicks', (req, res) => {
           res.status(404).json({ error: 'Message not found' });
         }
       });
-  });
-
+    }catch(err){
+      console.log(err);
+      log.info(err);
+    }
+      });
 
 }
 

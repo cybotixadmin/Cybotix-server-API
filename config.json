@@ -1,11 +1,13 @@
 {
+    "environment": "development",
     "database": {
         "host": "myrdsinstance.c4fxi8hjddcq.eu-west-1.rds.amazonaws.com",
         "port": "3306",
         "user": "sqluser",
         "password": "password",
         "database_name": "CybotixDB",
-        "agreements_table": "data_agreements_tb"
+        "agreements_table": "CybotixDB.data_agreements_tb",
+        "clickdata_table": "CybotixDB.clickdata_tb"
     },
     "accepted_audiences": {
         "Cybotix": 1,

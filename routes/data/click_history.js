@@ -11,8 +11,9 @@ const config = JSON.parse(configFile);
 
 accepted_audiences = config.accepted_audiences;
 accepted_issuers = config.accepted_issuers;
+const environment = config.environment;
 
-const defaultdb = config.database.database_name;
+const defaultdb = config.database.clickdata_table;
 
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
@@ -121,7 +122,7 @@ module.exports = function (app, connection) {
                         // There may or may not be a separate data requests, if so, this is included as well, to further narrow the data scope.
 
 
-                        var sql_filter = "";
+                        var sql_filter = "environment='" + environment + "' AND ";
 
                         console.log("grant 1:");
                         console.log(datagrantTokenPayload.grant);
@@ -209,7 +210,7 @@ module.exports = function (app, connection) {
                         //const browser_id = [req.body.browser_id];
                         //log.info(browser_id);
                         //    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
-                        const sql = 'SELECT uuid,utc, local_time, url FROM ' + defaultdb + '.clickdata_tb WHERE ' + sql_filter + ' ';
+                        const sql = 'SELECT uuid,utc, local_time, url FROM ' + defaultdb + ' WHERE ' + sql_filter + ' ';
                         console.log(sql);
                         log.info(sql);
                         connection.query(sql, null, (err, rows) => {

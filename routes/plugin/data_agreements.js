@@ -18,6 +18,7 @@ const config = JSON.parse(configFile);
 const defaultdb = config.database.database_name;
 
 const agreements_table = config.database.agreements_table;
+const environment = config.environment;
 
 const valid_audience_values = {
     "cybotix-personal-data-commander": "1",
@@ -140,7 +141,7 @@ module.exports = function (app, connection) {
         properties: {
             agreement_id: {
                 type: 'string',
-                "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+                "pattern": "^[A-Za-z0-9\.\-\_]{4,60}$",
                 "minLength": 4,
                 "maxLength": 60
             }
@@ -253,7 +254,7 @@ module.exports = function (app, connection) {
             //       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
             const utc = new Date().toISOString();
 
-            var sql = 'INSERT INTO ' + defaultdb + '.' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime,active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
+            var sql = 'INSERT INTO ' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime, active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
 
             console.log("SQL 2");
             console.log(sql);
@@ -314,8 +315,8 @@ module.exports = function (app, connection) {
                     const counterparty_id = data.sub;
                     log.debug("counterparty_id: " + counterparty_id);
 
-                    //
-                    const sql = 'SELECT * FROM ' + defaultdb + '.' + agreements_table + ' WHERE counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
+                    // look for active agreements in the database
+                    const sql = 'SELECT * FROM ' + agreements_table + ' WHERE environment="' + environment + '" AND active="1" AND counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
 
                     console.log("SQL 2.1");
                     console.log(sql);
@@ -427,7 +428,7 @@ module.exports = function (app, connection) {
         }
 
         // delete from SQLite database
-        const sql = 'SELECT active FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id = ? ';
+        const sql = 'SELECT active FROM ' + agreements_table + ' WHERE environment="' + environment + '" AND browser_id = ? ';
 
         //  const sql = "DELETE FROM messages WHERE browser_id='" +req.body.browser_id+ "' AND id=" +req.body.id+ "";
 
@@ -467,7 +468,7 @@ module.exports = function (app, connection) {
         }
 
         // delete from database
-        const sql = 'UPDATE ' + defaultdb + '.' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
+        const sql = 'UPDATE ' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
         console.log(sql);
         //   const values = [req.body.browser_id, req.body.uuid];
         // console.log(sql);
@@ -487,8 +488,10 @@ module.exports = function (app, connection) {
     });
 
     app.post('/plugin_user_delete_data_agreement', (req, res) => {
+        console.log('/plugin_user_delete_data_agreement');
         console.log(req.method);
         console.log(req.rawHeaders);
+        console.log(req.body)
         var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
 
         if (!installationUniqueId) {
@@ -496,17 +499,19 @@ module.exports = function (app, connection) {
                 error: 'Invalid installationUniqueId'
             });
         }
+
         // Validate JSON against schema
         const valid = ajv.validate(plugin_user_delete_data_agreement_json_schema, req.body);
 
-        if (!valid) {
+        if (valid) {
+            console.log('Invalid data format');
             return res.status(400).json({
                 error: 'Invalid data format'
             });
         }
 
         // delete from database
-        const sql = 'DELETE FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
+        const sql = "DELETE FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
         console.log(sql);
 
         connection.query(sql, function (err, result) {
@@ -542,7 +547,7 @@ module.exports = function (app, connection) {
         }
 
         // delete from database
-        const sql = 'SELECT * FROM ' + defaultdb + '.' + agreements_table + ' WHERE browser_id="' + installationUniqueId + '" AND uuid="' + req.body.uuid + '"';
+        const sql = "SELECT * FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
         console.log(sql);
 
         connection.query(sql, function (err, result) {
@@ -579,7 +584,7 @@ module.exports = function (app, connection) {
                 });
             }
 
-            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, uuid, counterparty_id, data_grants, original_request FROM ' + defaultdb + '.' + agreements_table + ' WHERE browserid = "' + installationUniqueId + '"';
+            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, uuid, active, counterparty_id, data_grants, original_request FROM ' + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "' ORDER BY lastmodifiedtime DESC";
             console.log(sql);
             //        all_data_agreements_db.all(sql, browser_id, (err, rows) => {
             connection.query(sql, function (err, result) {
