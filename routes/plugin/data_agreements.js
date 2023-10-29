@@ -254,7 +254,7 @@ module.exports = function (app, connection) {
             //       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
             const utc = new Date().toISOString();
 
-            var sql = 'INSERT INTO ' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime, active, data_grants, original_request ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "'" + ')';
+            var sql = 'INSERT INTO ' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime, active, data_grants, original_request, environment ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "','" + environment + "'" + ')';
 
             console.log("SQL 2");
             console.log(sql);
@@ -427,16 +427,14 @@ module.exports = function (app, connection) {
             });
         }
 
-        // delete from SQLite database
-        const sql = 'SELECT active FROM ' + agreements_table + ' WHERE environment="' + environment + '" AND browser_id = ? ';
-
-        //  const sql = "DELETE FROM messages WHERE browser_id='" +req.body.browser_id+ "' AND id=" +req.body.id+ "";
+        
+        const sql = "SELECT active FROM " + agreements_table + " WHERE environment='" + environment + "' AND browser_id = '"+installationUniqueId+"'";
 
         const values = [req.body.browser_id, req.body.id];
         console.log(sql);
         console.log(values);
 
-        db.run(sql, values, function (err) {
+        connection.query(sql, function (err, result) {
             if (err) {
                 return res.status(500).json({
                     error: 'Database error'

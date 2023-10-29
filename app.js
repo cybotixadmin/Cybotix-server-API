@@ -4,6 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
+// Read the configuration file once and store the data in memory
+const configFile = fs.readFileSync('./config.json');
+const config = JSON.parse(configFile);
 
 const { 
   v1: uuidv1,
@@ -14,7 +17,7 @@ const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
 // Create a logger instance
 const log = bunyan.createLogger({
-  name: 'apiapp',                    // Name of the application
+  name: config.appname,                    // Name of the application
   streams: [
   {
     stream: new RotatingFileStream({
@@ -33,17 +36,12 @@ const log = bunyan.createLogger({
 
 
 log.info('Cybotix API App');
-
 const njwt = require("njwt");
 const jsonwebtoken = require('jsonwebtoken');
-
 const secureRandom = require("secure-random");
 const formidable = require("formidable");
 
 
-// Read the configuration file once and store the data in memory
-const configFile = fs.readFileSync('./config.json');
-const config = JSON.parse(configFile);
 
 
 //const multer = require('multer');

@@ -579,7 +579,7 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
         version: "1.0", // Version of the token
         iss: issuer,
         sub: platformTokenPayload.sub, // who the token belongs to
-        aud: config.data_access_token_audience.clickstreamdata, // Audience of the token
+        aud: config.data_access_token_audience.clickstreamdata_location, // Audience of the token
         jti: uuidv4(),
         iat: Math.floor(Date.now() / 1000), // Current timestamp
         nbf: Math.floor(Date.now() / 1000), // Current timestamp
