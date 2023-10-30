@@ -95,6 +95,22 @@ require('./routes/data/click_history')(app,connection);
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// make the plugin available for private installation
+app.get('/cybotix-personal-data-commander.zip', (req, res) => {
+  // Specify the path to the ZIP file
+  const filePath = path.join(__dirname, '/downloadables/cybotix-personal-data-commander.zip');
+  
+  // Check if file exists
+  if (fs.existsSync(filePath)) {
+      res.download(filePath, (err) => {
+          if (err) {
+              res.status(500).send('File not found or could not be downloaded!');
+          }
+      });
+  } else {
+      res.status(404).send('File not found!');
+  }
+});
 
 // Start the server
 const PORT = process.env.PORT || config.port ;
