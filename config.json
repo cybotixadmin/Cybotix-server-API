@@ -5,7 +5,7 @@
         "host": "test-cybotix-rds-instance.cbuhhgsmbql7.eu-west-2.rds.amazonaws.com",
         "port": "3306",
         "user": "sqluser",
-        "password": "p4_ss0.orD2-1",
+        "password": "REDACTE4",
         "database_name": "CybotixDB",
         "agreements_table": "CybotixDB.data_agreements_tb",
         "clickdata_table": "CybotixDB.clickdata_tb"
@@ -46,4 +46,5 @@
     "signing_key": "./keys/cybotix.private_key.pem",
     "signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJtdG5CNDrDFkgBrpVXYnzM+vv09q\nATno9Wd954UM62R0bov15Z1c8fVODhtxZu+7viimjwVXiHlZLYdjj0WY2g==\n-----END PUBLIC KEY-----"
 
+    
 }
