@@ -1,11 +1,11 @@
 {
-    "environment": "development",
-    "appname": "api-dev",
+    "environment": "test",
+    "appname": "api-test",
     "database": {
-        "host": "myrdsinstance.c4fxi8hjddcq.eu-west-1.rds.amazonaws.com",
+        "host": "test-cybotix-rds-instance.cbuhhgsmbql7.eu-west-2.rds.amazonaws.com",
         "port": "3306",
         "user": "sqluser",
-        "password": "password",
+        "password": "p4_ss0.orD2-1",
         "database_name": "CybotixDB",
         "agreements_table": "CybotixDB.data_agreements_tb",
         "clickdata_table": "CybotixDB.clickdata_tb"
@@ -14,6 +14,7 @@
         "Cybotix": 1,
         "cybotix-personal-data-commander": 1,
         "http://api-dev.cybotix.no/data": 1,
+        "http://api-test.cybotix.no/data": 1,
         "https://api.cybotix.no/development/data": 1
     },
     "accepted_issuers": {
@@ -37,7 +38,7 @@
         }
     },
     "port": 3000,
-    "issuer": "https://api-dev.cybotix.no",
+    "issuer": "https://api-test.cybotix.no",
     "default_audience": "Cybotix",
     "data_access_token_audience": {
         "clickstreamdata_location": "http://localhost:3000/data"
