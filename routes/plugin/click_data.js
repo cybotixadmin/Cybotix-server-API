@@ -156,9 +156,9 @@ app.post('/plugin_user_delete_click', (req, res) => {
 
 
 app.post('/plugin_user_post_click', (req, res) => {
-  log.debug("/plugin_user_post_click");
-    //log.info(req.method);
-   //log.info(req.rawHeaders);
+  console.debug("/plugin_user_post_click");
+   console.log(req.method);
+   log.info(req.rawHeaders);
    log.debug(req.body);
   // Validate JSON against schema
   const valid = ajv.validate(plugin_user_post_click_json_schema, req.body);
@@ -176,12 +176,12 @@ app.post('/plugin_user_post_click', (req, res) => {
   const sql = 'INSERT INTO '+clickdata_table+' (environment, url, browser_id,uuid, utc, local_time) VALUES ("'+environment + '", "' +req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
   
   log.info("SQL 1");
-  log.info(sql);
+  console.log(sql);
 
   connection.query(sql, function (err, result) {
     //db.all(sql, values, (err, rows) => {
         if (err) {
-          log.debug(err);
+          console.debug(err);
             return res.status(500).json({
                 error: 'Database error'
             });

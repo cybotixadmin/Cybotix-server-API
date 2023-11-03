@@ -76,9 +76,9 @@ module.exports = function (app, connection) {
 
     app.get('/data', (req, res) => {
         try {
-            log.info("/data");
-            log.info(req.rawHeaders);
-            log.info(req.body);
+            console.log("/data");
+            console.log(req.rawHeaders);
+            //console.log(req.body);
 
             const platformTokenPayload = getValidatedPlatformTokenPayload(req.header("X_HTTP_CYBOTIX_PLATFORM_TOKEN"));
 
