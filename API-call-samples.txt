@@ -2,86 +2,74 @@
 
 
 
-
-cd "/cygdrive/c/users/lars_/Documents/my_corporate/AddScape/development/server API/V0.5/src"
-npm init -y
-
-npm install express sqlite3 ajv cors
-
-JSON in database
-https://www.beekeeperstudio.io/blog/sqlite-json
-
-
-curl -X POST -H "Content-Type: application/json" -d '{"content":"Hello, World!"}' http://localhost:3000/message
-
 # post clickstream data to Cybotix
 
-curl -X POST -H "Host: localhost:3000" -H ": dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Origin: chrome-extension://dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Content-Type: application/json" -d '{"content":"Hello, World!", "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg","url":"http://test2/click","localtime":"2023-08-21 13:47:32"}' http://localhost:3000/plugin_user_post_click
-
-# user using browser app to get clickstream data
+curl -X POST -H "Host: localhost:3000" -H ": dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Origin: chrome-extension://dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Content-Type: application/json" -d '{"content":"Hello, World!", "url":"http://test2/click","localtime":"2023-08-21 13:47:32"}' http://localhost:3000/plugin_user_post_click
 
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":""}' http://localhost:3000/plugin_user_get_all_clicks
+
+# API for user using browser app to get clickstream data
+
+
+curl -X GET -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" http://localhost:3000/plugin_user_get_all_clicks
 
 # user using browser app delete clickstream data item
 
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "id":"5"}' http://localhost:3000/plugin_user_delete_click
-
-#
-curl -X OPTIONS -H "Content-Type: application/json"  http://localhost:3000/plugin_user_post_click
+curl -X POST -H "Content-Type: application/json" -d '{  "linkid":"5"}' http://localhost:3000/plugin_user_delete_click
 
 
 
-# JSON schema syntax
-https://json-schema.org/understanding-json-schema/reference/string.html#length
+# delete multiple click stream items from browser plugin
 
-to get UTC timestamp use 
-new Date().toISOString()
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '[{"linkid":"bc48e22d-68be-4fed-8e95-b2eb58aabf7f"}, {"linkid":"337a2c23-b2cd-4bd0-9ac3-d9c2cbc18a67"}]' -k https://api-dev.cybotix.no/plugin_user_delete_clicks
 
-#
 
-curl -H "Origin: http://example.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: X-Requested-With"  -X OPTIONS --verbose http://localhost:3000/message
-
-#
+####
 
 # call to add data agreement
 
 
-curl -X POST -H "Content-Type: application/json" -d '{ "browser_id":"mhoppoobobddnonppblechkphekniflb", "userid":"", "agreement_json":{"createtime":"2023-08-28T20:49:41.725Z","lastmodifiedtime":"2023-08-29T20:49:41.725Z","owner_id":"2342","counterparty_name":"Web Shop Inc.","counterparty_id":"65232","scope":{"one":"two"}}}' http://localhost:3000/plugin_user_add_data_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{ "browserid":"mhoppoobobddnonppblechkphekniflb", "userid":"", "agreement_json":{"createtime":"2023-08-28T20:49:41.725Z","lastmodifiedtime":"2023-08-29T20:49:41.725Z","owner_id":"2342","counterparty_name":"Web Shop Inc.","counterparty_id":"65232","scope":{"one":"two"}}}' http://localhost:3000/plugin_user_add_data_agreement
 
 
 return data
-{"agreement_id":"5"}
+{"agreementid":"5"}
 
 
 
-# call to delete data agreement
+# call to delete data agreement(s)
 
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{ "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' http://localhost:3000/plugin_user_delete_data_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '[{"agreementid":"bc48e22d-68be-4fed-8e95-b2eb58aabf7f"}, {"agreementid":"337a2c23-b2cd-4bd0-9ac3-d9c2cbc18a67"}]' -k https://api-dev.cybotix.no/plugin_user_delete_data_agreement
 
 
-# call to read data agreement 
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '[{    "agreementid": "1b3248b7-9de0-4293-a9e8-f111ab934840"},{    "agreementid": "77e5cf7b-0b92-453d-911a-6ce827948f45"},{    "agreementid": "07fd81f7-697c-49fa-bacb-f83a12f715d2"},{    "agreementid": "92e83315-d079-4742-b77f-287bb0ce461b"},{    "agreementid": "d6fdadec-a76e-4327-835e-988cd521cf70"},{    "agreementid": "42d3060f-a738-4df7-943b-4cd1bec61768"},{    "agreementid": "a12d0075-2395-48b4-a164-5b94e9cb56d2"},{    "agreementid": "90ad864b-5fc2-4754-90d9-c8f6388ed13d"},{    "agreementid": "96c1cf7e-5e13-4a1d-92bb-3e0757394055"},{    "agreementid": "70e02552-7d4a-46e1-9ff5-1f5b472ee1e8"},{    "agreementid": "5d27f157-7273-4e70-856c-2003647af5e7"}]' -k https://api-dev.cybotix.no/plugin_user_delete_data_agreement
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{ "browser_id":"dmogejgjgpkaakblccgojkkdofkcjkcg", "userid":"", "agreement_id":"5"}' http://localhost:3000/plugin_user_read_data_agreement
+
+# call to read one data agreement 
+
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{"agreementid":"5"}' -k https://api-dev.cybotix.no/plugin_user_read_data_agreement
 
 
 # call to read all data agreements for a user/browserid
 
-curl -X GET -H "Content-Type: application/json"   -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  http://localhost:3000/plugin_user_read_all_data_agreements
+
+curl -X GET -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -k https://api-dev.cybotix.no/plugin_user_read_all_data_agreements
 
 
 
-# call to check validity of data agreement ID
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' http://localhost:3000/plugin_user_validate_agreement
+# call to check validity of data agreement
+
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "agreementid":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' -k https://api-dev.cybotix.no/plugin_user_validate_agreement
+
 
 
 # call to suspend/activate data agreement 
 # setting activestatus to "1" (active) or "0" (disabled)
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '{  "agreement_id":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6", "activestatus":"1"}' http://localhost:3000/plugin_user_set_agreement_active_status
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '{  "agreementid":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6", "activestatus":"1"}' -k https://api-dev.cybotix.no/plugin_user_set_agreement_active_status
 
 
 

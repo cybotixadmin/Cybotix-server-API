@@ -66,7 +66,7 @@ module.exports = function (app, connection) {
                 "minLength": 0,
                 "maxLength": 300
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
                 "minLength": 4,
@@ -89,7 +89,7 @@ module.exports = function (app, connection) {
                 "minLength": 0,
                 "maxLength": 300
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
                 "minLength": 4,
@@ -107,20 +107,20 @@ module.exports = function (app, connection) {
                 "minLength": 0,
                 "maxLength": 300
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
                 "minLength": 4,
                 "maxLength": 60
             }
         },
-        required: ['browser_id', 'userid'],
+        required: ['browserid', 'userid'],
     };
 
     const plugin_user_set_agreement_active_status_json_schema = {
         type: "object",
         properties: {
-            agreement_id: {
+            agreementid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9\-\_\.]{10,100}$",
                 "minLength": 10,
@@ -133,33 +133,38 @@ module.exports = function (app, connection) {
                 "maxLength": 1
             }
         },
-        required: ['agreement_id', 'activestatus'],
+        required: ['agreementid', 'activestatus'],
     };
 
     const plugin_user_delete_data_agreement_json_schema = {
-        type: "object",
-        properties: {
-            agreement_id: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9\.\-\_]{4,60}$",
-                "minLength": 4,
-                "maxLength": 60
-            }
-        },
-        required: ['agreement_id'],
+        "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "agreementid": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+      }
+    },
+    "required": ["agreementid"],
+    "additionalProperties": false
+  },
+  "minItems": 1,
+  "maxItems": 20,
+  "uniqueItems": true
     };
 
     const plugin_user_read_data_agreement_json_schema = {
         type: "object",
         properties: {
-            agreement_id: {
+            agreementid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
                 "minLength": 4,
                 "maxLength": 60
             }
         },
-        required: ['agreement_id'],
+        required: ['agreementid'],
     };
 
     const plugin_user_check_request_against_data_agreements_json_schema = {
@@ -219,12 +224,21 @@ module.exports = function (app, connection) {
         const rawPlatformToken = req.body.platformtoken;
         getValidPlatformToken(rawPlatformToken).then(function (data) {
             console.log(data);
-            counterparty_id = data.sub;
-            console.log("counterparty_id: " + counterparty_id);
+            //counterparty_id = data.sub;
+            console.log(data.sub );
+
+            const counterparty = JSON.parse(base64decode(data.sub));
+            console.log(counterparty);
+
+             counterparty_id = counterparty.id;
+            console.log("counterparty_id: " +counterparty_id);
+            var counterparty_name = counterparty.name;
+            console.log("counterparty_name: " + counterparty_name);
+
 
             // generate uniqueagreement id
 
-            const uuid = crypto.randomUUID()
+            const agreementid = crypto.randomUUID()
 
                 // var data_grants = req.body.data_grants;
                 // console.log(data_grants)
@@ -234,8 +248,7 @@ module.exports = function (app, connection) {
             try {
                 original_request = JSON.stringify(req.body.original_request);
             } catch (err) {}
-            //json.uuid = uuid;
-
+           
             // use the data_grants field to contain more easily searchable specifics about the access granted.
             var data_grants;
             try {
@@ -251,10 +264,16 @@ module.exports = function (app, connection) {
             } catch (err) {}
 
             console.log(original_request);
-            //       const sql = 'INSERT INTO Cybotix.data_agreements_tb ( browser_id, uuid, createtime, lastmodifiedtime, json ) VALUES (?,?,?,?,?)';
             const utc = new Date().toISOString();
 
-            var sql = 'INSERT INTO ' + agreements_table + ' ( browserid, uuid, counterparty_id, createtime, lastmodifiedtime, active, data_grants, original_request, environment ) VALUES("' + installationUniqueId + '","' + uuid + '","' + counterparty_id + '", now(), now(),1, ' + "'" + data_grants + "','" + original_request + "','" + environment + "'" + ')';
+// gerenate a default expiration time if no information is provided
+// set it to 7 days into the future
+const now = new Date();
+const futureDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+const futureTimestamp = formatDate(futureDate);
+
+
+            var sql = 'INSERT INTO ' + agreements_table + ' ( browserid, agreementid, counterparty_name ,counterparty_id, createtime, expiretime, lastmodifiedtime, active, data_grants, original_request, environment ) VALUES("' + installationUniqueId + '","' + agreementid + '","' + counterparty_name + '","' + counterparty_id + '", now(), "' + futureTimestamp + '"'+ ', now(), 1, ' + "'" + data_grants + "','" + original_request + "','" + environment + "'" + ')';
 
             console.log("SQL 2");
             console.log(sql);
@@ -311,9 +330,14 @@ module.exports = function (app, connection) {
                 getValidPlatformToken(rawPlatformToken).then(function (data) {
                     console.log(data);
 
-                    // lookup the ID from the platform token agains this users agreements in the database
-                    const counterparty_id = data.sub;
-                    console.log("counterparty_id: " + counterparty_id);
+                    // lookup the ID from the platform token against this user's agreements in the database
+                    console.log(data.sub );
+
+                    const counterparty = JSON.parse(base64decode(data.sub));
+                    console.log(counterparty);
+
+                    const counterparty_id = counterparty.id;
+                    console.log("counterparty_id: " +counterparty_id);
 
                     // look for active agreements in the database
                     const sql = 'SELECT data_grants FROM ' + agreements_table + ' WHERE environment="' + environment + '" AND (expiretime IS NULL OR expiretime > now()) AND active="1" AND counterparty_id = "' + counterparty_id + '" AND browserid = "' + installationUniqueId + '"';
@@ -430,9 +454,9 @@ module.exports = function (app, connection) {
             });
         }
 
-        const sql = "SELECT active FROM " + agreements_table + " WHERE environment='" + environment + "' AND browser_id = '" + installationUniqueId + "'";
+        const sql = "SELECT active FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "'";
 
-        const values = [req.body.browser_id, req.body.id];
+        const values = [req.body.browserid, req.body.id];
         console.log(sql);
         console.log(values);
 
@@ -468,15 +492,13 @@ module.exports = function (app, connection) {
         }
 
         // delete from database
-        const sql = 'UPDATE ' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
+        const sql = 'UPDATE ' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid='" + req.body.agreementid + "'";
         console.log(sql);
-        //   const values = [req.body.browser_id, req.body.uuid];
-        // console.log(sql);
-        //     console.log(values);
-
+     
         connection.query(sql, function (err, result) {
             //       all_data_agreements_db.run(sql, values, function (err) {
             if (err) {
+                console.log(err );
                 return res.status(500).json({
                     error: 'Database error'
                 });
@@ -510,8 +532,10 @@ module.exports = function (app, connection) {
             });
         }
 
+        const commaSeparatedList = req.body.map(item => `'${item.agreementid}'`).join(', ');
+
         // delete from database
-        const sql = "DELETE FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
+        const sql = "DELETE FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid IN (" + commaSeparatedList + ")";
         console.log(sql);
 
         connection.query(sql, function (err, result) {
@@ -547,7 +571,7 @@ module.exports = function (app, connection) {
         }
 
         // delete from database
-        const sql = "SELECT * FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND uuid='" + req.body.agreement_id + "'";
+        const sql = "SELECT * FROM " + agreements_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid='" + req.body.agreementid + "'";
         console.log(sql);
 
         connection.query(sql, function (err, result) {
@@ -584,9 +608,8 @@ module.exports = function (app, connection) {
                 });
             }
 
-            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, uuid, active, counterparty_id, data_grants, original_request FROM ' + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "' ORDER BY lastmodifiedtime DESC";
+            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, agreementid, active, counterparty_id, data_grants, original_request FROM ' + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "' ORDER BY lastmodifiedtime DESC";
             console.log(sql);
-            //        all_data_agreements_db.all(sql, browser_id, (err, rows) => {
             connection.query(sql, function (err, result) {
 
                 if (err) {
@@ -647,6 +670,19 @@ function compareValues(value1, value2) {
         return value1 === value2;
     }
 }
+
+
+// Format the date and time in the desired format "YYYY-MM-DD HH:MM:SS"
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+  
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
 
 function compareObjects(requestObj, grantedObj) {
     // count number of keys in each object and if different, return false

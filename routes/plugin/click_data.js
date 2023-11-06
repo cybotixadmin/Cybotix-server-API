@@ -58,17 +58,33 @@ const plugin_user_post_click_json_schema = {
       url: { type: 'string',
       "minLength": 1,
       "maxLength": 1000 },
-      browser_id: { type: 'string',
+      browserid: { type: 'string',
       "pattern": "^[A-Za-z0-9\-_\.]{4,100}$",
       "minLength": 4,
       "maxLength": 100 }
     },
-    required: ['browser_id','url','localtime'],
+    required: ['url','localtime'],
   };
 
   
 
-
+  const plugin_user_delete_clicks_json_schema = {
+    "type": "array",
+"items": {
+"type": "object",
+"properties": {
+  "linkid": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+  }
+},
+"required": ["linkid"],
+"additionalProperties": false
+},
+"minItems": 1,
+"maxItems": 20,
+"uniqueItems": true
+};
 
   
 
@@ -89,12 +105,12 @@ const plugin_user_post_click_json_schema = {
   const plugin_user_delete_click_json_schema = {
       type: "object",
       properties: {
-      uuid: { type: 'string',
+      linkid: { type: 'string',
       "pattern": "^[A-Za-z0-9\-\_\.]{10,100}$",
   "minLength": 1,
   "maxLength": 100  }
         },
-        required: ['uuid'],
+        required: ['linkid'],
     };
   
   const ajv = new Ajv();
@@ -127,7 +143,7 @@ app.post('/plugin_user_delete_click', (req, res) => {
   }
 
   // delete from database
-  const sql = 'DELETE FROM '+clickdata_table+' WHERE evironment="'+environment+'" AND browser_id="'+installationUniqueId+'" AND uuid="'+req.body.uuid+'"';
+  const sql = 'DELETE FROM '+clickdata_table+' WHERE evironment="'+environment+'" AND browserid="'+installationUniqueId+'" AND linkid="'+req.body.linkid+'"';
 
   log.info(sql);
   
@@ -157,9 +173,17 @@ app.post('/plugin_user_delete_click', (req, res) => {
 
 app.post('/plugin_user_post_click', (req, res) => {
   console.debug("/plugin_user_post_click");
+  try {
    console.log(req.method);
-   log.info(req.rawHeaders);
+   console.log(req.rawHeaders);
    log.debug(req.body);
+   var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+   if (!installationUniqueId) {
+       return res.status(400).json({
+           error: 'Invalid installationUniqueId'
+       });
+   }
   // Validate JSON against schema
   const valid = ajv.validate(plugin_user_post_click_json_schema, req.body);
 
@@ -168,29 +192,21 @@ app.post('/plugin_user_post_click', (req, res) => {
   }
 
    // generate unique note id
-   const uuid = crypto.randomUUID()
+   const linkid = crypto.randomUUID()
 
-   //const sql = 'INSERT INTO messages (url, browser_id, utc, localtime) VALUES (?,?,?,?)';
   const utc = new Date().toISOString();
-  const values = [req.body.url, req.body.browser_id ,utc, req.body.localtime];
-  const sql = 'INSERT INTO '+clickdata_table+' (environment, url, browser_id,uuid, utc, local_time) VALUES ("'+environment + '", "' +req.body.url + '", "' + req.body.browser_id + '", "' + uuid + '", now(), now() )';
+  const sql = 'INSERT INTO '+clickdata_table+' (environment, url, browserid,linkid, utc, local_time) VALUES ("'+environment + '", "' +req.body.url + '", "' + installationUniqueId + '", "' + linkid + '", now(), now() )';
   
-  log.info("SQL 1");
+  console.log("SQL 1");
   console.log(sql);
 
   connection.query(sql, function (err, result) {
-    //db.all(sql, values, (err, rows) => {
         if (err) {
           console.debug(err);
             return res.status(500).json({
                 error: 'Database error'
             });
         }
-//        log.info(result);
- //       log.info(result.affectedRows);
-//log.info("1---"+JSON.parse(result));
-//log.info("2---"+JSON.stringify(result));
-
 
         if (result.affectedRows > 0) {
             log.info("affectedRows: " + result.affectedRows)
@@ -199,6 +215,52 @@ app.post('/plugin_user_post_click', (req, res) => {
             res.status(404).json({});
         }
     });
+  } catch (err) {
+    console.debug(err);
+  }
+});
+
+
+app.post('/plugin_user_delete_clicks', (req, res) => {
+  console.log('/plugin_user_delete_clicks');
+  console.log(req.method);
+  console.log(req.rawHeaders);
+  console.log(req.body)
+  var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+  if (!installationUniqueId) {
+      return res.status(400).json({
+          error: 'Invalid installationUniqueId'
+      });
+  }
+
+  // Validate JSON against schema
+  const valid = ajv.validate(plugin_user_delete_clicks_json_schema, req.body);
+
+  if (valid) {
+      console.log('Invalid data format');
+      return res.status(400).json({
+          error: 'Invalid data format'
+      });
+  }
+
+  const commaSeparatedList = req.body.map(item => `'${item.linkid}'`).join(', ');
+
+  // delete from database
+  const sql = "DELETE FROM " + clickdata_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND linkid IN (" + commaSeparatedList + ")";
+  console.log(sql);
+
+  connection.query(sql, function (err, result) {
+      if (err) {
+          console.log(err);
+          return res.status(500).json({
+              error: 'Database error'
+          });
+      }
+      res.status(201).json({
+          status: 0
+      });
+  });
 });
 
 
@@ -208,10 +270,9 @@ app.get('/plugin_user_get_all_clicks', (req, res) => {
     // Validate JSON against schema
     const valid = ajv.validate(plugin_user_get_all_clicks_json_schema, req.body);
     
-    
-  if (!valid) {
-    return res.status(400).json({ error: 'Invalid data format' });
-  }
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
 
  
     var installationUniqueId = "";
@@ -230,10 +291,10 @@ app.get('/plugin_user_get_all_clicks', (req, res) => {
       return res.status(400).json({ error: 'Invalid data format' });
     }
 
-// TO BE IMPLEMENTED, using the option regexp pattern
-// at present all data is returned
+    // TO BE IMPLEMENTED, using the option regexp pattern
+    // at present all data is returned
     // Read from database
-    const sql = 'SELECT uuid,utc, local_time, url FROM '+clickdata_table+' WHERE environment="'+environment+'" AND browser_id = "'+installationUniqueId+'" ';
+    const sql = 'SELECT linkid, utc, local_time, url FROM '+clickdata_table+' WHERE environment="'+environment+'" AND browserid = "'+installationUniqueId+'" ';
     log.info(sql);
     console.log(sql)
     connection.query(sql, installationUniqueId, (err, rows) => {
@@ -254,9 +315,7 @@ app.get('/plugin_user_get_all_clicks', (req, res) => {
       log.info(err);
     }
       });
-
 }
-
 
 
 function isPlatformTokenRawStructureValid(token) {

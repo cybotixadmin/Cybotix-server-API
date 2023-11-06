@@ -69,14 +69,14 @@ module.exports = function (app, connection) {
                 "minLength": 1,
                 "maxLength": 300
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
                 "minLength": 4,
                 "maxLength": 60
             }
         },
-        required: ['browser_id', 'url', 'localtime'],
+        required: ['browserid', 'url', 'localtime'],
     };
 
     const plugin_user_get_all_clicks_json_schema = {
@@ -87,14 +87,14 @@ module.exports = function (app, connection) {
                 "minLength": 0,
                 "maxLength": 300
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
                 "minLength": 4,
                 "maxLength": 60
             }
         },
-        required: ['browser_id', 'userid'],
+        required: ['browserid', 'userid'],
     };
 
     const data_access_request_json_schema = {
@@ -235,6 +235,10 @@ module.exports = function (app, connection) {
                 console.log("platform token payload(raw): " + parts[1]);
                 const payload_raw = parts[1];
                 const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
+
+               const platformtoken = getValidatedPlatformTokenPayload(req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN'));
+console.log(platformtoken);
+
                 console.log("3.9. platform token payload(decoded): ");
                 console.log(payload);
                 const rawDataRequest_raw = req.get('X_HTTP_CYBOTIX_DATA_REQUEST');
@@ -322,7 +326,10 @@ module.exports = function (app, connection) {
 
     });
 
-    /** create platform token */
+    /** create platform token 
+     * called from a GUI-frontend to create a platform token
+     * Takes name and public key as input
+    */
     app.post('/gui_user_create_platform_token', (req, res) => {
         console.log('/gui_user_create_platform_token');
         console.log(req.method);
@@ -345,7 +352,12 @@ module.exports = function (app, connection) {
 
             if (isValidNameInput(req.body.name) && isValidPEMInput(req.body.publicKey)) {
 
-                const subject = req.body.name;
+                // these two values should be know from the authentication that the customer goes through to get to this point
+                const subject_name = req.body.name;
+                const subject_id = uuidv4();
+const subject = { name: subject_name, id: subject_id};
+             
+const sub =    base64encode(JSON.stringify(subject));
 
                 const publicKey = req.body.publicKey;
 
@@ -356,10 +368,10 @@ module.exports = function (app, connection) {
                 const payload = {
                     version: "1.0", // Version of the token
                     iss: issuer,
-                    sub: subject,
+                    sub: sub, // subject of the token
                     aud: default_audience, // Audience of the token
                     key: [publicKey], // x5c expects an array of certificate strings. Here we provide only the public key.
-                    jti: uuidv4(),
+                    jti: uuidv4(), // unique identifier for the token
                     iat: Math.floor(Date.now() / 1000), // Current timestamp
                     nbf: Math.floor(Date.now() / 1000), // Current timestamp
                     exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days from now
@@ -417,6 +429,112 @@ module.exports = function (app, connection) {
     });
 
 }
+
+
+
+function getValidatedPlatformTokenPayload(rawPlatformToken) {
+    try {
+        //     const token = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/');
+        const token = rawPlatformToken;
+        /*
+        Do basic "sanity"-check on the JWT holding the platform token
+        That it is of an appropriate length and that it is base64 encoded, and has the right number of delimiters
+         */
+        function isPlatformTokenRawStructureValid(token) {
+            console.debug("isPlatformTokenStructureValid");
+            const regExpValidPlatformToken = new RegExp(/^[a-zA-Z0-9\/_\.\-_=]{100,2000}$/);
+            if (regExpValidPlatformToken.test(token)) {
+                return true
+            } else {
+                return false;
+            }
+        }
+
+        function decodedPlatformtokenSignatureValid(token) {
+            try {
+                console.debug("isPlatformtokenSignatureValid");
+                console.debug("isPlatformtokenSignatureValid, validating: " + token);
+                const cybotixPublicKey = config.signature_validation_key;
+                console.debug("isPlatformtokenSignatureValid, using: " + cybotixPublicKey);
+                // Verify the token
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, cybotixPublicKey, {
+                        algorithms: ['ES256']
+                    });
+                console.log("decoded");
+                console.log(decoded);
+                return decoded;
+            } catch (e) {
+                console.log(e);
+                return false;
+            }
+        }
+
+        function isPlatformTokenPayloadDataValid(platform_token_payload) {
+            console.log("isPlatformTokenPayloadDataValid");
+            // check platform token issue and audience
+            console.log(accepted_audiences);
+            console.log(accepted_issuers);
+            console.log(platform_token_payload);
+
+            console.log("iss: " + platform_token_payload.iss);
+            console.log("iss accept: " + (platform_token_payload.iss in accepted_issuers));
+            console.log("sub: " + platform_token_payload.sub);
+            console.log("aud: " + platform_token_payload.aud);
+            console.log("aud accept: " + (platform_token_payload.aud in accepted_audiences));
+            const now = Math.floor(Date.now() / 1000);
+            console.log("now: " + now);
+
+            console.log("exp: " + platform_token_payload.exp);
+            console.log("exp accept: " + (now <= platform_token_payload.exp));
+            console.log("nbf: " + platform_token_payload.nbf);
+            console.log("nbf accept: " + (now >= platform_token_payload.nbf));
+
+            if (platform_token_payload.iss in accepted_issuers &&
+                platform_token_payload.aud in accepted_audiences &&
+                now <= platform_token_payload.exp &&
+                now >= platform_token_payload.nbf) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        if (isPlatformTokenRawStructureValid(token)) {
+            const platformTokenPayload = decodedPlatformtokenSignatureValid(token);
+            if (platformTokenPayload) {
+                console.log("signature is valid and content is decoded as: " + platformTokenPayload);
+
+                // check the content of the platform token
+                if (isPlatformTokenPayloadDataValid(platformTokenPayload)) {
+                    if (checkTokenRevokationIfRevocationEndPointIsPresent) {
+                        // look for token revocation endpoint in the JWT itself
+
+                    } else {
+
+                        return platformTokenPayload;
+                    }
+                } else {
+                    console.log("invalid platform token content");
+                    return false;
+                }
+
+            } else {
+                console.log("3.8. platform token signature invalid");
+                //return res.status(401).json({ error: 'Invalid platform token signature' });
+            }
+
+        } else {
+            console.log("invalid platform token structure");
+            return false;
+        }
+
+    } catch (e) {
+        console.log(e);
+        return false;
+    }
+}
+
 
 function inserttokenuuid(uuid, expiretime, type) {
 
@@ -486,18 +604,20 @@ function isPlatformTokenPayloadDataValid(platform_token_payload) {
 function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationUniqueId, userid, restrictions_raw) {
     console.log("## create_dataaccess_token");
     console.log("rawDataRequest(decoded): " + rawDataRequest);
-    const parts = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/').split('.');
-    if (parts.length !== 3) {
+    //const parts = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/').split('.');
+   // if (parts.length !== 3) {
         //throw new Error('Invalid token format');
-        console.log('Invalid token format');
-    }
-    console.log("payload(raw): " + parts[1]);
-    const payload_raw = parts[1];
-    const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
-    console.log("payload(decoded): ");
-    console.log(payload);
-    platformTokenPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-    console.log(isPlatformTokenPayloadDataValid(platformTokenPayload));
+   //     console.log('Invalid token format');
+   // }
+    //console.log("payload(raw): " + parts[1]);
+    //const payload_raw = parts[1];
+    //const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
+   // console.log("payload(decoded): ");
+   // console.log(payload);
+
+    platformTokenPayload = getValidatedPlatformTokenPayload(rawPlatformToken);
+    //platformTokenPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+    //console.log(isPlatformTokenPayloadDataValid(platformTokenPayload));
     // check if the platform token is valid
 
 

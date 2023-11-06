@@ -62,21 +62,21 @@ module.exports = function (app, connection) {
                 "minLength": 1,
                 "maxLength": 1000
             },
-            browser_id: {
+            browserid: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9\-_\.]{4,100}$",
                 "minLength": 4,
                 "maxLength": 100
             }
         },
-        required: ['browser_id', 'url', 'localtime'],
+        required: ['browserid', 'url', 'localtime'],
     };
 
     const ajv = new Ajv();
 
     app.get('/data', (req, res) => {
         try {
-            console.log("/data");
+            console.log("\n\n\n\n/data");
             console.log(req.rawHeaders);
             //console.log(req.body);
 
@@ -178,7 +178,7 @@ module.exports = function (app, connection) {
                         var browserid_filter = "";
                         console.log("user:" + grant.data_subject.installationUniqueId);
                         if (grant.data_subject.installationUniqueId != undefined) {
-                            browserid_filter = " browser_id='" + grant.data_subject.installationUniqueId + "' ";
+                            browserid_filter = " browserid='" + grant.data_subject.installationUniqueId + "' ";
                         } else {
                             console.log("no browserid in data access token");
                         }
@@ -207,9 +207,9 @@ module.exports = function (app, connection) {
                         // only procceed if both tokens are present and valid
 
                         // Read from database
-                        //const browser_id = [req.body.browser_id];
-                        //log.info(browser_id);
-                        //    const sql = 'SELECT * FROM messages WHERE browser_id = ? ORDER BY url';
+                        //const browserid = [req.body.browserid];
+                        //log.info(browserid);
+                        //    const sql = 'SELECT * FROM messages WHERE browserid = ? ORDER BY url';
                         const sql = 'SELECT uuid,utc, local_time, url FROM ' + defaultdb + ' WHERE ' + sql_filter + ' ';
                         console.log(sql);
                         log.info(sql);

@@ -13,37 +13,33 @@
     "accepted_audiences": {
         "Cybotix": 1,
         "cybotix-personal-data-commander": 1,
-        "http://api-dev.cybotix.no/data": 1,
-        "http://api-test.cybotix.no/data": 1,
+        "https://api-dev.cybotix.no/data": 1,
+        "https://api-test.cybotix.no/data": 1,
         "https://api.cybotix.no/development/data": 1
     },
     "accepted_issuers": {
-        "https://cybotix.no": 1,
+        "https://api.cybotix.no": 1,
         "https://api-dev.cybotix.no": 1,
-        "http://api-dev.cybotix.no/data": 1,
         "https://api.cybotix.no/development/data": 1
     },
     "datagrant_tokens": {
         "accepted_audiences": {
             "Cybotix": 1,
             "cybotix-personal-data-commander": 1,
-            "http://api-dev.cybotix.no/data": 1,
             "https://api.cybotix.no/development/data": 1
         },
         "accepted_issuers": {
-            "https://cybotix.no": 1,
+            "https://api.cybotix.no": 1,
             "https://api-dev.cybotix.no": 1,
-            "http://api-dev.cybotix.no/data": 1,
             "https://api.cybotix.no/development/data": 1
         }
     },
-    "port": 80,
-    "issuer": "https://api-dev.cybotix.no",
+    "port": 3000,
+    "issuer": "https://api.cybotix.no",
     "default_audience": "Cybotix",
     "data_access_token_audience": {
-        "clickstreamdata_location": "http://api-dev.cybotix.no/data"
+        "clickstreamdata_location": "https://api-dev.cybotix.no/data"
     },
     "signing_key": "./keys/cybotix.private_key.pem",
     "signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJtdG5CNDrDFkgBrpVXYnzM+vv09q\nATno9Wd954UM62R0bov15Z1c8fVODhtxZu+7viimjwVXiHlZLYdjj0WY2g==\n-----END PUBLIC KEY-----"
-
 }
