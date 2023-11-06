@@ -62,7 +62,7 @@ curl -X GET -H "Content-Type: application/json" -H "installationUniqueId: 6596c8
 
 # call to check validity of data agreement
 
-curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "agreementid":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' -k https://api-dev.cybotix.no/plugin_user_validate_agreement
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "agreementid":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6"}' -k https://api-dev.cybotix.no/plugin_user_validate_data_agreement
 
 
 
@@ -70,6 +70,13 @@ curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c
 # setting activestatus to "1" (active) or "0" (disabled)
 
 curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '{  "agreementid":"c8b5a6db-1c2b-4b2a-b9b1-6ce50fc321f6", "activestatus":"1"}' -k https://api-dev.cybotix.no/plugin_user_set_agreement_active_status
+
+
+
+# call to bulk suspend data agreements 
+
+curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '[{  "agreementid":"894e89f3-b3a3-4d02-8833-39019b179df3", "agreementid":"e03164d9-e74d-4a0d-a9ac-8e35f0b2c50e"}]' -k https://api-dev.cybotix.no/plugin_user_deactivate_agreements
+
 
 
 

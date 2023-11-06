@@ -13,7 +13,7 @@ accepted_audiences = config.accepted_audiences;
 accepted_issuers = config.accepted_issuers;
 const environment = config.environment;
 
-const defaultdb = config.database.clickdata_table;
+const click_tb = config.database.clickdata_table;
 
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
@@ -96,8 +96,15 @@ module.exports = function (app, connection) {
                 // check for possible revokcation of platformtoken
                 const tokenid = platformTokenPayload.jti;
 
-                var counterparty = platformTokenPayload.sub;
-                console.log("counterparty: " + counterparty);
+            
+
+                const counterparty = JSON.parse(base64decode(platformTokenPayload.sub));
+                console.log(counterparty);
+    
+                 counterparty_id = counterparty.id;
+                console.log("counterparty_id: " +counterparty_id);
+                var counterparty_name = counterparty.name;
+                console.log("counterparty_name: " + counterparty_name);
 
                 const datagrantTokenPayload = getValidatedDatagrantTokenPayload(req.header("X_HTTP_CYBOTIX_DATA_ACCESSTOKEN"));
 
@@ -108,13 +115,21 @@ module.exports = function (app, connection) {
                 if (datagrantTokenPayload) {
                     console.log("data grant token signature is valid and content is decoded as: " + datagrantTokenPayload);
 
+                    const grantee = JSON.parse(base64decode(datagrantTokenPayload.sub));
+                    console.log(grantee);
+        
+                    grantee_id = grantee.id;
+                    console.log("grantee_id: " +grantee_id);
+                    var grantee_name = grantee.name;
+                    console.log("grantee_name: " + grantee_name);
+
                     // check if the counterparty (subject of platformtoken) is in the dataaccess token audience
-                    console.log(platformTokenPayload.sub);
-                    console.log(datagrantTokenPayload.sub);
-                    console.log(platformTokenPayload.sub == datagrantTokenPayload.sub);
+                    console.log(counterparty_id);
+                    console.log(grantee_id);
+                    console.log(counterparty_id == grantee_id);
                     console.log("does the datatoken belong to the same entity as the platform token? ")
 
-                    if (platformTokenPayload.sub == datagrantTokenPayload.sub) {
+                    if (counterparty_id == grantee_id) {
                         console.log("datagrant token belong to the same owner as the platform token")
 
                         // read the grants from the data access token
@@ -193,6 +208,9 @@ module.exports = function (app, connection) {
                             sql_filter = sql_filter + " AND " + browserid_filter;
                         }
 
+                        // add taking into account expiration time
+                        sql_filter = sql_filter + "AND (expiration IS NULL OR expiration > NOW() ) "
+
                         // look for time range in data access token
                         var from;
                         var to;
@@ -210,7 +228,7 @@ module.exports = function (app, connection) {
                         //const browserid = [req.body.browserid];
                         //log.info(browserid);
                         //    const sql = 'SELECT * FROM messages WHERE browserid = ? ORDER BY url';
-                        const sql = 'SELECT uuid,utc, local_time, url FROM ' + defaultdb + ' WHERE ' + sql_filter + ' ';
+                        const sql = 'SELECT linkid, utc, local_time, url FROM ' + click_tb + ' WHERE ' + sql_filter + ' ';
                         console.log(sql);
                         log.info(sql);
                         connection.query(sql, null, (err, rows) => {
@@ -462,19 +480,22 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
  * convert datagrant  to a SQL filter statement
  */
 function requestJSONToSQL(jsonObj) {
+    console.log("### requestJSONToSQL");
+    console.log(JSON.stringify(jsonObj));
     if (jsonObj.requesttype !== 'clickhistory') {
         throw new Error('Invalid request type');
     }
+console.log(jsonObj);
 
     let timeframe = jsonObj.requestdetails.time;
     let filter = jsonObj.requestdetails.filter;
 
-    if (timeframe !== "now-1hr") {
+    if (/now *\- *(\d+) *([a-z]+)/i.test(timeframe) === false) {
         throw new Error('Unsupported timeframe');
     }
 
     // Convert the JSON timeframe and filter into SQL WHERE conditions
-    let timeCondition = `utc > DATE_SUB(NOW(), INTERVAL 1 HOUR)`;
+    let timeCondition = 'utc > '+ timeToSqlInterval(timeframe);
     let filterCondition = `url REGEXP '${filter}'`;
 
     // Construct the final SQL statement
@@ -482,3 +503,41 @@ function requestJSONToSQL(jsonObj) {
 
     return sqlfilter;
 }
+
+
+function timeToSqlInterval(timeString) {
+    // Regular expression to match patterns like "now-Xhr" or "now-Xday"
+    const timePattern = /now *\- *(\d+) *([a-z]+)/i;
+    const match = timePattern.exec(timeString);
+  
+    if (!match) {
+      throw new Error("Invalid time format");
+    }
+  
+    // Extract the amount and the unit from the time string
+    const amount = match[1];
+    const unit = match[2];
+  
+    // Map the time unit to an SQL interval unit
+    const unitsToSql = {
+      'hr': 'HOUR',
+      'day': 'DAY',
+      'min': 'MINUTE',
+      'sec': 'SECOND',
+      // Add more mappings as needed
+    };
+  
+    // Get the SQL interval unit
+    const sqlUnit = unitsToSql[unit];
+  
+    if (!sqlUnit) {
+      throw new Error("Invalid time unit");
+    }
+  
+    // Return the SQL interval statement
+    //return `CURRENT_TIMESTAMP - INTERVAL '${amount} ${sqlUnit}'`;
+return "DATE_SUB(NOW(), INTERVAL " + amount + " " + sqlUnit + ")";
+
+  }
+  
+ 

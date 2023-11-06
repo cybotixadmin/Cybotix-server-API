@@ -17,7 +17,9 @@ const defaultdb = config.database.database_name;
 const clickdata_table = config.database.clickdata_table;
 const environment = config.environment;
 
+const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
+  
 const bunyan = require('bunyan');
 var RotatingFileStream = require('bunyan-rotating-file-stream');
 // Create a logger instance
@@ -40,8 +42,6 @@ const log = bunyan.createLogger({
 module.exports = function (app, connection) {
 
     
-  const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
-
   
   
 
@@ -339,3 +339,22 @@ function isDataAccessTokenRawStructureValid(platform_token_payload, token) {
   }
     }
   
+    
+function getInstallationUniqueId(text) {
+
+  try {
+
+      if (regExpValidInstallationUniqueId.test(text)) {
+          installationUniqueId = text;
+          console.log("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+          return installationUniqueId;
+      } else {
+          console.log("an invalid installationUniqueId found in header");
+          return false;
+      }
+
+  } catch (err) {
+      console.log(err);
+      return false;
+  }
+}
