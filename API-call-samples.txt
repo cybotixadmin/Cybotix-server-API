@@ -1,10 +1,15 @@
 
 
+# restore data
+
+
+curl -X POST -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -H "Content-Type: application/json" -d@backup.1.json http://localhost:3000/plugin_user_import
 
 
 # post clickstream data to Cybotix
 
-curl -X POST -H "Host: localhost:3000" -H ": dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Origin: chrome-extension://dmogejgjgpkaakblccgojkkdofkcjkcg" -H "Content-Type: application/json" -d '{"content":"Hello, World!", "url":"http://test2/click","localtime":"2023-08-21 13:47:32"}' http://localhost:3000/plugin_user_post_click
+
+curl -X POST -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -H "Content-Type: application/json" -d '{"url":"http://test2/click","localtime":"2023-11-07T13:47:32Z"}' http://localhost:3000/plugin_user_post_click
 
 
 
@@ -23,6 +28,13 @@ curl -X POST -H "Content-Type: application/json" -d '{  "linkid":"5"}' http://lo
 # delete multiple click stream items from browser plugin
 
 curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '[{"linkid":"bc48e22d-68be-4fed-8e95-b2eb58aabf7f"}, {"linkid":"337a2c23-b2cd-4bd0-9ac3-d9c2cbc18a67"}]' -k https://api-dev.cybotix.no/plugin_user_delete_clicks
+
+
+# set expiration time for click data (set expiration time to be equal to the utc timestamp plus the provided value)
+
+curl -X POST -H "Content-Type: application/json"  -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055"  -d '{  "days":5, "hours":1}' http://localhost:3000/plugin_user_set_clickdata_lifetime
+
+
 
 
 ####
@@ -76,6 +88,12 @@ curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c
 # call to bulk suspend data agreements 
 
 curl -X POST -H "Content-Type: application/json" -H "installationUniqueId: 6596c84b-544c-98e3-6ce2-8ccc1b334055" -d '[{  "agreementid":"894e89f3-b3a3-4d02-8833-39019b179df3", "agreementid":"e03164d9-e74d-4a0d-a9ac-8e35f0b2c50e"}]' -k https://api-dev.cybotix.no/plugin_user_deactivate_agreements
+
+
+
+# do-not-include list
+# list of URLs that should not be captured
+
 
 
 

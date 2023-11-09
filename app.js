@@ -86,6 +86,8 @@ var connection = mysql.createConnection({
 });
 
 
+require('./routes/plugin/account_level')(app,connection);
+
 require('./routes/plugin/click_data')(app,connection);
 require('./routes/plugin/data_agreements')(app,connection);
 require('./routes/plugin/tokens')(app,connection);

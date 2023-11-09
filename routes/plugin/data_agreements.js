@@ -60,17 +60,7 @@ module.exports = function (app, connection) {
                 type: 'string',
                 "minLength": 0,
                 "maxLength": 300
-            },
-            userid: {
-                type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            browserid: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9]{4,}$",
-                "minLength": 4,
-                "maxLength": 60
+
             }
         },
         required: ['counterparty_id'],
@@ -81,19 +71,10 @@ module.exports = function (app, connection) {
         properties: {
             counterparty_id: {
                 type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            userid: {
-                type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            browserid: {
-                type: 'string',
                 "pattern": "^[A-Za-z0-9]{4,}$",
-                "minLength": 4,
-                "maxLength": 60
+                "minLength": 0,
+                "maxLength": 300
+
             }
         },
         required: ['counterparty_id'],
@@ -250,13 +231,13 @@ module.exports = function (app, connection) {
             const counterparty = JSON.parse(base64decode(data.sub));
             console.log(counterparty);
 
-             counterparty_id = counterparty.id;
+            counterparty_id = counterparty.id;
             console.log("counterparty_id: " +counterparty_id);
             var counterparty_name = counterparty.name;
             console.log("counterparty_name: " + counterparty_name);
 
 
-            // generate uniqueagreement id
+            // generate unique agreement id
 
             const agreementid = crypto.randomUUID()
 
@@ -266,7 +247,7 @@ module.exports = function (app, connection) {
 
                 var original_request;
             try {
-                original_request = JSON.stringify(req.body.original_request);
+                original_request = base64decode(req.body.original_request);
             } catch (err) {}
            
             // use the data_grants field to contain more easily searchable specifics about the access granted.
@@ -308,13 +289,10 @@ const futureTimestamp = formatDate(futureDate);
                 }
                 console.log(result);
                 console.log(result.affectedRows);
-                //console.log("1---"+JSON.parse(result));
-                //console.log("2---"+JSON.stringify(result));
-
+        
 
                 if (result.affectedRows > 0) {
                     console.log("affectedRows: " + result.affectedRows)
-                    //res.status(200).json('{"added:"' + result.affectedRows + "}");
                     res.status(200).json({
                         added: result.affectedRows
                     });
@@ -673,7 +651,7 @@ const futureTimestamp = formatDate(futureDate);
                 });
             }
 
-            const sql = 'SELECT userid, browserid, createtime, lastmodifiedtime, counterparty_name, agreementid, active, counterparty_id, data_grants, original_request FROM ' + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "' ORDER BY lastmodifiedtime DESC";
+            const sql = 'SELECT createtime, lastmodifiedtime, counterparty_name, agreementid, active, counterparty_id, data_grants, original_request FROM ' + agreements_table + " WHERE environment='" + environment + "' AND browserid = '" + installationUniqueId + "' ORDER BY lastmodifiedtime DESC";
             console.log(sql);
             connection.query(sql, function (err, result) {
 

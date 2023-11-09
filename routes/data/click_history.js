@@ -43,34 +43,7 @@ module.exports = function (app, connection) {
 
     const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
-    // JSON Schema
-    const plugin_user_post_click_json_schema = {
-        type: 'object',
-        properties: {
-            content: {
-                type: 'string',
-                "minLength": 2,
-                "maxLength": 30
-            },
-            localtime: {
-                type: 'string',
-                "minLength": 2,
-                "maxLength": 30
-            },
-            url: {
-                type: 'string',
-                "minLength": 1,
-                "maxLength": 1000
-            },
-            browserid: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9\-_\.]{4,100}$",
-                "minLength": 4,
-                "maxLength": 100
-            }
-        },
-        required: ['browserid', 'url', 'localtime'],
-    };
+   
 
     const ajv = new Ajv();
 
@@ -233,6 +206,7 @@ module.exports = function (app, connection) {
                         log.info(sql);
                         connection.query(sql, null, (err, rows) => {
                             if (err) {
+                                console.log(err);
                                 return res.status(500).json({
                                     error: 'Database error'
                                 });

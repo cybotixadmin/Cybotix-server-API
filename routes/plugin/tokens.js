@@ -51,51 +51,7 @@ module.exports = function (app, connection) {
     const regExpValidInstallationUniqueId = new RegExp(/^[a-zA-Z0-9_\.\-]{10,60}$/);
 
     // JSON Schema
-    const plugin_user_post_click_json_schema = {
-        type: 'object',
-        properties: {
-            content: {
-                type: 'string',
-                "minLength": 2,
-                "maxLength": 30
-            },
-            localtime: {
-                type: 'string',
-                "minLength": 2,
-                "maxLength": 30
-            },
-            url: {
-                type: 'string',
-                "minLength": 1,
-                "maxLength": 300
-            },
-            browserid: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9]{4,}$",
-                "minLength": 4,
-                "maxLength": 60
-            }
-        },
-        required: ['browserid', 'url', 'localtime'],
-    };
 
-    const plugin_user_get_all_clicks_json_schema = {
-        type: "object",
-        properties: {
-            userid: {
-                type: 'string',
-                "minLength": 0,
-                "maxLength": 300
-            },
-            browserid: {
-                type: 'string',
-                "pattern": "^[A-Za-z0-9]{4,}$",
-                "minLength": 4,
-                "maxLength": 60
-            }
-        },
-        required: ['browserid', 'userid'],
-    };
 
     const data_access_request_json_schema = {
         type: "object",
