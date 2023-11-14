@@ -258,11 +258,11 @@ function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
             console.log(payload);
 
             console.log("iss: " + payload.iss);
-            console.log("iss accept: " + (payload.iss in accepted_issuers));
+            console.log("iss accept: " + (payload.iss in config.datagrant_tokens.accepted_issuers));
             console.log("sub: " + payload.sub);
             console.log("jti: " + payload.jti);
             console.log("aud: " + payload.aud);
-            console.log("aud accept: " + (payload.aud in accepted_audiences));
+            console.log("aud accept: " + (payload.aud in config.datagrant_tokens.accepted_audiences));
             const now = Math.floor(Date.now() / 1000);
             console.log("now: " + now);
             console.log("exp: " + payload.exp);
@@ -274,8 +274,8 @@ function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
             } catch (e) {
                 console.log(e);
             }
-            if (payload.iss in accepted_issuers &&
-                payload.aud in accepted_audiences &&
+            if (payload.iss in config.datagrant_tokens.accepted_issuers &&
+                payload.aud in config.datagrant_tokens.accepted_audiences &&
                 now <= payload.exp &&
                 now >= payload.nbf) {
                 return true;
@@ -287,12 +287,12 @@ function getValidatedDatagrantTokenPayload(rawDatagrantToken) {
         function decodedDataGrantTokenSignatureValid(token) {
             try {
                 console.debug("decodedDataGrantTokenSignatureValid, validating: " + token);
-                const cybotixPublicKey = config.signature_validation_key;
+                const cybotixPublicKey = config.dataaccesstoken_signature_validation_key;
                 console.debug("decodedDataGrantTokenSignatureValid, using: " + cybotixPublicKey);
                 // Verify the token
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, cybotixPublicKey, {
-                        algorithms: ['ES256']
+                        algorithms: ['RS256']
                     });
                 console.log("decoded");
                 console.log(decoded);
@@ -369,12 +369,12 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
             try {
                 console.debug("isPlatformtokenSignatureValid");
                 console.debug("isPlatformtokenSignatureValid, validating: " + token);
-                const cybotixPublicKey = config.signature_validation_key;
+                const cybotixPublicKey = config.platformtoken_signature_validation_key;
                 console.debug("isPlatformtokenSignatureValid, using: " + cybotixPublicKey);
                 // Verify the token
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, cybotixPublicKey, {
-                        algorithms: ['ES256']
+                        algorithms: ['RS256']
                     });
                 console.log("decoded");
                 console.log(decoded);
@@ -388,15 +388,15 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
         function isPlatformTokenPayloadDataValid(platform_token_payload) {
             console.log("isPlatformTokenPayloadDataValid");
             // check platform token issue and audience
-            console.log(accepted_audiences);
-            console.log(accepted_issuers);
+            console.log(config.platform_tokens.accepted_audiences);
+            console.log(config.platform_tokens.accepted_issuers);
             console.log(platform_token_payload);
 
             console.log("iss: " + platform_token_payload.iss);
-            console.log("iss accept: " + (platform_token_payload.iss in accepted_issuers));
+            console.log("iss accept: " + (platform_token_payload.iss in config.platform_tokens.accepted_issuers));
             console.log("sub: " + platform_token_payload.sub);
             console.log("aud: " + platform_token_payload.aud);
-            console.log("aud accept: " + (platform_token_payload.aud in accepted_audiences));
+            console.log("aud accept: " + (platform_token_payload.aud in config.platform_tokens.accepted_audiences));
             const now = Math.floor(Date.now() / 1000);
             console.log("now: " + now);
 
@@ -405,8 +405,8 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
             console.log("nbf: " + platform_token_payload.nbf);
             console.log("nbf accept: " + (now >= platform_token_payload.nbf));
 
-            if (platform_token_payload.iss in accepted_issuers &&
-                platform_token_payload.aud in accepted_audiences &&
+            if (platform_token_payload.iss in config.platform_tokens.accepted_issuers &&
+                platform_token_payload.aud in config.platform_tokens.accepted_audiences &&
                 now <= platform_token_payload.exp &&
                 now >= platform_token_payload.nbf) {
                 return true;
@@ -433,12 +433,10 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
                     console.log("invalid platform token content");
                     return false;
                 }
-
             } else {
                 console.log("3.8. platform token signature invalid");
                 //return res.status(401).json({ error: 'Invalid platform token signature' });
             }
-
         } else {
             console.log("invalid platform token structure");
             return false;

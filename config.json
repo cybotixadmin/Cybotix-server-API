@@ -10,6 +10,7 @@
         "agreements_table": "CybotixDB.data_agreements_tb",
         "clickdata_table": "CybotixDB.clickdata_tb"
     },
+    "platform_tokens": {
     "accepted_audiences": {
         "Cybotix": 1,
         "cybotix-personal-data-commander": 1,
@@ -21,7 +22,7 @@
         "https://api.cybotix.no": 1,
         "https://api-dev.cybotix.no": 1,
         "https://api.cybotix.no/development/data": 1
-    },
+    }},
     "datagrant_tokens": {
         "accepted_audiences": {
             "Cybotix": 1,
@@ -40,6 +41,8 @@
     "data_access_token_audience": {
         "clickstreamdata_location": "https://api-dev.cybotix.no/data"
     },
-    "signing_key": "./keys/cybotix.private_key.pem",
-    "signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJtdG5CNDrDFkgBrpVXYnzM+vv09q\nATno9Wd954UM62R0bov15Z1c8fVODhtxZu+7viimjwVXiHlZLYdjj0WY2g==\n-----END PUBLIC KEY-----"
+    "platformtoken_signing_key": "./keys/cybotix.platformtoken.privatekey.pem",
+    "platformtoken_signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy3Z5wJ/CelzVSbFj2Kiq\nS3IrKvBv5tE5ZJyegV1a4kAaRQTnlAdy6GBHD36Ep3l7VKiXgxMlCvLopeIUJtni\ndkH+YuMtwBWtbs9q9xoXCGf5m/YH+ZXF6b5QolIhYkduZMC8F0ZSKBJt+8ATMTX8\nHbzeq43u8rHi2KHjsRQFDi88Z6WtKTT31MiAwE+WrwjgfFjtSqkQFbgM8LnTQ1Iv\n4v8sSYzp2kN2PEn28P2GR8xiLTDEhdswoyL44z6R7OxejIm1UZGz2mp40YH/240u\nzAE5hie/F5eUqSASZDT1CHQrx0Edf4t2wHYZ/wXU+BIEhXWjckk9V7GPNwXh+AZJ\newIDAQAB\n-----END PUBLIC KEY-----\n",
+    "dataaccesstoken_signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy3Z5wJ/CelzVSbFj2Kiq\nS3IrKvBv5tE5ZJyegV1a4kAaRQTnlAdy6GBHD36Ep3l7VKiXgxMlCvLopeIUJtni\ndkH+YuMtwBWtbs9q9xoXCGf5m/YH+ZXF6b5QolIhYkduZMC8F0ZSKBJt+8ATMTX8\nHbzeq43u8rHi2KHjsRQFDi88Z6WtKTT31MiAwE+WrwjgfFjtSqkQFbgM8LnTQ1Iv\n4v8sSYzp2kN2PEn28P2GR8xiLTDEhdswoyL44z6R7OxejIm1UZGz2mp40YH/240u\nzAE5hie/F5eUqSASZDT1CHQrx0Edf4t2wHYZ/wXU+BIEhXWjckk9V7GPNwXh+AZJ\newIDAQAB\n-----END PUBLIC KEY-----\n"
+
 }

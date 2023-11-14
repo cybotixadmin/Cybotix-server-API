@@ -150,7 +150,26 @@ module.exports = function (app, connection) {
     "additionalProperties": false
   },
   "minItems": 1,
-  "maxItems": 20,
+  "maxItems": 200,
+  "uniqueItems": true
+    };
+
+    
+    const plugin_user_activate_agreements_json_schema = {
+        "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "agreementid": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+      }
+    },
+    "required": ["agreementid"],
+    "additionalProperties": false
+  },
+  "minItems": 1,
+  "maxItems": 200,
   "uniqueItems": true
     };
 
@@ -579,6 +598,50 @@ const futureTimestamp = formatDate(futureDate);
 
         // delete from database
         const sql = "UPDATE  " + agreements_table + " SET active = 0 WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid IN (" + commaSeparatedList + ")";
+        console.log(sql);
+
+        connection.query(sql, function (err, result) {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({
+                    error: 'Database error'
+                });
+            }
+            res.status(201).json({
+                status: 0
+            });
+        });
+    });
+
+
+    
+    app.post('/plugin_user_activate_agreements', (req, res) => {
+        console.log('/plugin_user_activate_agreements');
+        console.log(req.method);
+        console.log(req.rawHeaders);
+        console.log(req.body)
+        var installationUniqueId = getInstallationUniqueId(req.header("installationUniqueId"));
+
+        if (!installationUniqueId) {
+            return res.status(400).json({
+                error: 'Invalid installationUniqueId'
+            });
+        }
+
+        // Validate JSON against schema
+        const valid = ajv.validate(plugin_user_activate_agreements_json_schema, req.body);
+
+        if (valid) {
+            console.log('Invalid data format');
+            return res.status(400).json({
+                error: 'Invalid data format'
+            });
+        }
+
+        const commaSeparatedList = req.body.map(item => `'${item.agreementid}'`).join(', ');
+
+        // delete from database
+        const sql = "UPDATE  " + agreements_table + " SET active = 1 WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid IN (" + commaSeparatedList + ")";
         console.log(sql);
 
         connection.query(sql, function (err, result) {

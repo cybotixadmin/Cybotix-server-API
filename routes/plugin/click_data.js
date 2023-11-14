@@ -50,7 +50,7 @@ module.exports = function (app, connection) {
                 "minLength": 2,
                 "maxLength": 30
             },
-            localtime: {
+            local_time: {
                 type: 'string',
                 "pattern": "^[A-Za-z0-9\-_\. :]{8,30}$",
                 "minLength": 8,
@@ -62,7 +62,7 @@ module.exports = function (app, connection) {
                 "maxLength": 1000
             }
         },
-        required: ['url', 'localtime'],
+        required: ['url', 'local_time'],
     };
 
     const plugin_user_delete_clicks_json_schema = {
@@ -72,7 +72,8 @@ module.exports = function (app, connection) {
             "properties": {
                 "linkid": {
                     "type": "string",
-                    "pattern": "^[A-Za-z0-9\.\-_]{4,60}$",
+                    "minLength": 8,
+                "maxLength": 30
                 }
             },
             "required": ["linkid"],
@@ -129,6 +130,8 @@ module.exports = function (app, connection) {
 
     const ajv = new Ajv();
 
+
+    // delete one click history item
     app.post('/plugin_user_delete_click', (req, res) => {
         try {
             log.info('/plugin_user_delete_click');
@@ -152,10 +155,10 @@ module.exports = function (app, connection) {
                 });
             }
 
-            // delete from database
-            const sql = 'DELETE FROM ' + clickdata_table + ' WHERE evironment="' + environment + '" AND browserid="' + installationUniqueId + '" AND linkid="' + req.body.linkid + '"';
+            // delete from databasen
+            const sql = 'DELETE FROM ' + clickdata_table + ' WHERE environment="' + environment + '" AND browserid="' + installationUniqueId + '" AND linkid="' + req.body.linkid + '"';
 
-            log.info(sql);
+            console.log(sql);
 
             connection.query(sql, function (err, result) {
 
@@ -252,13 +255,13 @@ module.exports = function (app, connection) {
                 });
             }
             
-var localtime = req.body.localtime;
+var local_time = req.body.local_time;
 
             // generate unique note id
             const linkid = crypto.randomUUID()
 
                 const utc = new Date().toISOString();
-            const sql = 'INSERT INTO ' + clickdata_table + ' (environment, url, browserid,linkid, utc, localtime) VALUES ("' + environment + '", "' + req.body.url + '", "' + installationUniqueId + '", "' + linkid + '", now(), "'+localtime+'" )';
+            const sql = 'INSERT INTO ' + clickdata_table + ' (environment, url, browserid,linkid, utc, local_time) VALUES ("' + environment + '", "' + req.body.url + '", "' + installationUniqueId + '", "' + linkid + '", now(), "'+local_time.replace(/\.[0-9]{3}Z$/,"") +'" )';
 
             console.log("SQL 1");
             console.log(sql);
@@ -283,6 +286,7 @@ var localtime = req.body.localtime;
         }
     });
 
+    // bulk delete one click history item
     app.post('/plugin_user_delete_clicks', (req, res) => {
         console.log('/plugin_user_delete_clicks');
         console.log(req.method);
@@ -301,7 +305,7 @@ var localtime = req.body.localtime;
 
         if (valid) {
             console.log('Invalid data format');
-            return res.status(400).json({
+            return res.status(200).json({
                 error: 'Invalid data format'
             });
         }
@@ -358,7 +362,7 @@ var localtime = req.body.localtime;
             // TO BE IMPLEMENTED, using the option regexp pattern
             // at present all data is returned
             // Read from database
-            const sql = 'SELECT linkid, utc, localtime, url, expiration FROM ' + clickdata_table + ' WHERE environment="' + environment + '" AND expiration >=now() AND browserid = "' + installationUniqueId + '" ';
+            const sql = 'SELECT linkid, utc, local_time, url, expiration FROM ' + clickdata_table + ' WHERE environment="' + environment + '" AND expiration >=now() AND browserid = "' + installationUniqueId + '" ';
             log.info(sql);
             console.log(sql)
             connection.query(sql, installationUniqueId, (err, rows) => {

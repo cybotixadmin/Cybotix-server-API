@@ -192,8 +192,8 @@ module.exports = function (app, connection) {
                 const payload_raw = parts[1];
                 const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
 
-               const platformtoken = getValidatedPlatformTokenPayload(req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN'));
-console.log(platformtoken);
+                const platformtoken = getValidatedPlatformTokenPayload(req.get('X_HTTP_CYBOTIX_PLATFORM_TOKEN'));
+                console.log(platformtoken);
 
                 console.log("3.9. platform token payload(decoded): ");
                 console.log(payload);
@@ -282,38 +282,50 @@ console.log(platformtoken);
 
     });
 
-    /** create platform token 
+
+    /** create platform token
      * called from a GUI-frontend to create a platform token
      * Takes name and public key as input
-    */
-    app.post('/gui_user_create_platform_token', (req, res) => {
+     */
+    app.post('/gui_user_create_platform_token2', (req, res) => {
         console.log('/gui_user_create_platform_token');
         console.log(req.method);
         console.log(req.rawHeaders);
         console.log("\n\nreq.body");
+        console.log(req.body);
+        console.log("\n\nreq.body.publicKey");
         console.log(req.body.publicKey);
 
         try {
             function isValidNameInput(input) {
-                const name_regex = /^[A-Za-z0-9,.\- ]{1,20}$/;
+                const name_regex = /^[A-Za-z0-9,.\- ]{1,50}$/;
 
                 return name_regex.test(input);
             }
 
             function isValidPEMInput(input) {
 
-                const pem_regex = /^[A-Za-z0-9\/\r\n\- \+]{100,4000}$/;
+                const pem_regex = /^[A-Za-z0-9\/\r\n\- \+=]{80,4000}$/;
                 return pem_regex.test(input);
             }
 
+            console.log("1.1");
+            console.log(isValidNameInput(req.body.name));
+            console.log(isValidPEMInput(req.body.publicKey));
             if (isValidNameInput(req.body.name) && isValidPEMInput(req.body.publicKey)) {
+                console.log("1.2");
 
                 // these two values should be know from the authentication that the customer goes through to get to this point
                 const subject_name = req.body.name;
                 const subject_id = uuidv4();
-const subject = { name: subject_name, id: subject_id};
-             
-const sub =    base64encode(JSON.stringify(subject));
+                console.log("subject_name: " + subject_name);
+                console.log("subject_id: " + subject_id);
+                const subject = {
+                    name: subject_name,
+                    id: subject_id
+                };
+
+                const sub = base64encode(JSON.stringify(subject));
 
                 const publicKey = req.body.publicKey;
 
@@ -332,12 +344,151 @@ const sub =    base64encode(JSON.stringify(subject));
                     nbf: Math.floor(Date.now() / 1000), // Current timestamp
                     exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days from now
                 };
-                 const cybotixkey = fs.readFileSync(config.platformtoken_signing_key);
-                //const cybotixkey = fs.readFileSync("./keys/cybotix.private_key.pem");
+                const cybotixkey = fs.readFileSync(config.signing_key);
 
                 console.log("cybotixkey");
                 console.log(cybotixkey);
                 log.debug(payload);
+
+                function readKeyFromFile(filePath) {
+                    return new Promise((resolve, reject) => {
+                        fs.readFile(filePath, (err, data) => {
+                            if (err)
+                                reject(err);
+                            else
+                                resolve(data);
+                        });
+                    });
+                }
+
+                // Usage
+                const keyPath = 'keys/private_key.der';
+                readKeyFromFile(keyPath)
+                .then(function (derKey) {
+                    console.log("DER data")
+                    console.log(derKey);
+                    return crypto.subtle.importKey(
+                        "pkcs8",
+                        derKey, {
+                        name: "RSASSA-PKCS1-v1_5",
+                        hash: "SHA-256"
+                    },
+                        false,
+                        ["sign"]);
+                }).then(function (key) {
+                    console.log("key");
+                    console.log(key);
+                    return crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, data);
+                }).then(function (signature) {
+                    console.log("signature");
+                    console.log(signature);
+                    return signature;
+
+                    // data is the key in Buffer format
+                })
+                .catch(err => console.error(err));
+
+                var signAlgorithm = {
+                    name: "RSASSA-PKCS1-v1_5",
+                    hash: {
+                        name: "SHA-256"
+                    },
+                    modulusLength: 2048,
+                    extractable: false,
+                    publicExponent: new Uint8Array([1, 0, 1])
+                }
+
+                const header2 = {
+                    alg: "RS256",
+                    typ: "JWT"
+                };
+
+                const payload2 = {
+                    sub: "1234567890",
+                    name: "John Doe",
+                    iat: 1516239022
+                };
+                //const pem = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDLdnnAn8J6XNVJ\nsWPYqKpLcisq8G/m0TlknJ6BXVriQBpFBOeUB3LoYEcPfoSneXtUqJeDEyUK8uil\n4hQm2eJ2Qf5i4y3AFa1uz2r3GhcIZ/mb9gf5lcXpvlCiUiFiR25kwLwXRlIoEm37\nwBMxNfwdvN6rje7yseLYoeOxFAUOLzxnpa0pNPfUyIDAT5avCOB8WO1KqRAVuAzw\nudNDUi/i/yxJjOnaQ3Y8Sfbw/YZHzGItMMSF2zCjIvjjPpHs7F6MibVRkbPaanjR\ngf/bjS7MATmGJ78Xl5SpIBJkNPUIdCvHQR1/i3bAdhn/BdT4EgSFdaNyST1XsY83\nBeH4Bkl7AgMBAAECggEAYTjXrOeqMnYxpOkS4PCXjz2aywXhMtY/Koh8ZSyKxRoE\nc36Ief+lNMzsp8a49J3kBOwamhOH29d+u+Vv47CxufiG6hHMRsEVAqIyZqkc4HNu\nnsvNu8GJtMuwFCBSu3eOlK5UMnrzvxovW+DISveU5VDexfMofufpkcKp3m/GiqPF\nh9OmO/zL1310WuUe7EiGXq6UACpdTpUvjHGMi+sjLnXJHglzYWbwFq7kHNnh+2dU\nv7EqaxMc8iSlaZXKmUdv0tdrzpH+wDcl+/M5glD/J8Me5Y2WvxVC+SwS2amYvlak\ngmRnMWKh4iKnd0Xguq15PLniOtLu742HhXR2UZgAQQKBgQDlnsFxwoAyWoWZmSYC\nFmBCCQ5FpNFnUdF2BXV1q5AIl2sHcFQSy5iGfVMn+jljkqR7QB4JHeALPGeTeNcV\nN7pxBlfcGH9PHx1LSfM4iFDIofWvIKVx6H9F8TVK4kmv7eldlHjAgPUA6uipQj0E\nS0+5FfnDzcM6QrPyK5YCEgs26QKBgQDi1mtTw87VdwvW1VZttK+pBMLuriDs7033\nVbnP5XQkJKBYFtaqkDwTLaiJexUbkZn0Z/Cs2moxCCdWx+4CUsEsQT0kBZbH21S2\nnGCHx0vzpXcIcgdZ3ZvvxgSk3XjvTVyDX+60xsnWF/Wr6CHatXi5BjuxseNJqJ9h\n90tqyWIGwwKBgQCbBgGoIh6W4FKOjr0Ab8bxDlgaYNoXnT+DJNBWb0vA4SmbThUU\n02vYcMgxl1gjh5+QrosYsJjQPSnYgJ8FbihrolKy/78D1gfbCsQwiKexrNbIM4w/\nSS6UM/M86WXCZydEzLZxkR7YTcBidZvoSEg8tz93GHYT4XDHsPGH2FLF8QKBgQDi\nGMzTqklAFi+zy+Mg6EdqlbdixidFYuV4kXbq1I9l8yfrhaAkVC29A/aISilo2ED3\nDp8i+3V7N+BWLGN851VqMgCqJfP7cw/GEKpay/hVe2jg/x96oFvsq5g3aBVBmP+M\nZxN8FuRZRHp4BaGw6M7SxXa8kE23Pp7Wu/HtF5tglwKBgEmzTBmi4CQFDEpwXuta\n4jplBmdEuGPs6FzY5SovdOMbN6udO7ICs+jIXVvAJyGssvT/jg9CCDFr6dx+goYL\nPpVEuEmJJEN45bmKTvCCIMfTBnd8pWW49dnl5LfUfQQw7Wws8VIZZwa9wrj9rVLq\nnt8QyVivyYTwHAFGMLWLjwhg\n-----END PRIVATE KEY-----\n";
+                //const pem = "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgjM6jmaLwQHpAgIm9\nOxFN4ru82FIg1AcGsJbXNjle/i6hRANCAAT4z+VwSM8VRyaKXjIopqYGk6VtF1QI\n85etadqMY1FEkCSmnEm34YJKXFyyPYjPkNlVL/naRhkOXHMIzmBdWLkI\n-----END PRIVATE KEY-----";
+                const pem = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDQtueUsvaeSPKJ\nslM2AXAtdWnWosUc6WlWRb/XlBoTHlh1bLhVu3xFBvpEB3NbkhuYEWxMU4PJ9ToZ\nESBwfc2tyCK4VU17USyVySCtMV4SnLJhZ91pEWrIArQf6Q2y9vxdC7jEahb2ntKX\nx/fYOMdURcxB06pNDNKt9f4xldBjK7RuvLspZrCg1vC3/ORUS3WReFtfsmKBeopU\nGP0VaclZjJ/PRK4eOgc1c/PIRdrzjHSNtxEBGliGYrdUVbbTiqc4hb5HYfsaZchy\ne89vKEItowLIUvrNPiCbR0xGYBXR55dxNBClm531Krnj6YmHoS+q2B+v/9dFCfVc\n1zrkQcX3AgMBAAECggEAZ+DAveeciwcvf4z7kUOB+34WoTb99/fL755jbv5NQ/q0\neC0WScU4gnqIkNdMeOTtSvBRAGQIkbm1osg9Zv+WIModTbVXDOtHz3z9AHYzpfvL\nZGN3dVWv2cBOuhsaMFpxHDY7TbanmzNNCTIDjuAjhTQABzs75YFeUiq+yxsPTmuI\n9X0cem8T/Joy1JnOWKKsdtFnkiNJiy0+ErwKXf0XgIJMG314pzz1TAlX0YmBGEuv\nPROiyubCBokIk1WSm0uowRRMvizQuqlioTmZTGS0a9AUuZq+8Pmyfpkd/37WglRE\n3tn9ykrEZJMMvB7z8R97ybxF2/EmnaVaB4DrVtPZsQKBgQD/SeNK8X/pbdcWQFMG\nuDqMA42+kkj3txEqRG0YpaLhl1u+KJxL5P8cY3tReN8ImzdE1zkOcz7IqpkG2iZA\nuCIFJORMmPSTVsD9uEQ0fEIGy95xrPzn0l4QOZIOWz/4TQ190rmM1r0+zpkEDKvp\nI8UwKxFTyCjr3cvhx1XSXMlDvQKBgQDRS8rvSbiMLnou9ROPk70dJ2a9fKEImmuQ\nIArZgupqZBL9Y5ahIYfr/Vow7MSW9yW9CpbP4WZcqTRLLr7CJslvasl48f12xkem\n/x/mHwHqMZcawUWWkaN2bLLl+tjeBBmptRdKPth64GCRonhpJvnMmbELOZy6F90e\nnLf2xqwxwwKBgQC4oJJOcAvnITYt9IVXVcOZ4TQRADDfXjl+zQ/thFUhO9rw0uP+\ni3Xo7RWRnY4H5mF5WwH7rmNYsvCLIRgLNF/+QmkN8IzpRhO7KxnAr6D801Jj+gzK\nB71ZlJlJ4rqH9Anu1oi1D9S76KSHZjaqHOGObYdRhW/67WR3PDeYNNymLQKBgCrD\n0Nhp+NJz4LVdkDyjFF4zodOP9pt6agYN9gmRrXJFtned9LZB0rMOlnIuvtCV+VkS\nI9SgGrlOPYgrKgEjyb8BU99pmr+9LgDaWls79Lk0nspxuVVVts/I0Bkb01ox/khl\n3zdldfhNho3bY70goKQEt18yy2pe2+iYXyKGX8LfAoGBAKVMAtHvUp6m7hnYiLgV\nK9hoVhRoxG+PEN0Ps9oNR+nk6u2ZmyjCpHmZ8otTP7BpG1PDoOBWruW9Bu7D7owc\nX1m8jpr0v0ikiq9jSQY8eXYyZc4dxjoejHPRRUihGP7gfIcWTwh+zTJU+OpQh0kM\noyqxpEFuH2ZaFE4esdwXBIyx\n-----END PRIVATE KEY-----\n"
+                function base64StringToArrayBuffer(b64str) {
+                    var byteStr = atob(b64str)
+                        var bytes = new Uint8Array(byteStr.length)
+                        for (var i = 0; i < byteStr.length; i++) {
+                            bytes[i] = byteStr.charCodeAt(i)
+                        }
+                        return bytes.buffer
+                }
+
+                function importPrivateKey0(pem) {
+                    console.log("pem: " + pem)
+                    const pemHeader = "-----BEGIN PRIVATE KEY-----";
+                    const pemFooter = "-----END PRIVATE KEY-----";
+                    const pemContents = pem.replace(/\-\-*(BEGIN|END) *PRIVATE *KEY *\-\-*/g, '').replace(/\n/g, '');
+                    console.log("pemContents: " + pemContents)
+                    const binaryDer = str2ab(atob(pemContents));
+
+                    return crypto.subtle.importKey(
+                        "pkcs8",
+                        binaryDer, {
+                        name: "RSASSA-PKCS1-v1_5",
+                        hash: {
+                            name: "SHA-256"
+                        },
+                    },
+                        true,
+                        ["sign"]).catch(error => {
+                        console.error('Error importing private key:', error);
+                        throw error;
+                    });
+                }
+
+                const signAlgorithm1 = {
+                    name: "RSASSA-PKCS1-v1_5",
+                    hash: {
+                        name: "SHA-256"
+                    },
+                    modulusLength: 2048,
+                    extractable: false,
+                    publicExponent: new Uint8Array([1, 0, 1])
+                }
+
+                function importPrivateKey(pemKey) {
+                    return new Promise(function (resolve) {
+                        var importer = crypto.subtle.importKey("pkcs8", base64StringToArrayBuffer(pemKey.replace(/\-\-*(BEGIN|END) *PRIVATE *KEY *\-\-*/g, '').replace(/\n/g, '')), signAlgorithm1, true, ["sign"])
+                            importer.then(function (key) {
+                                resolve(key)
+                            })
+                    })
+                }
+
+                importPrivateKey(pem)
+                .then(privateKey => console.log('Imported private key:', privateKey))
+                .catch(err => console.error(err));
+
+                function str2ab(str) {
+                    const buf = new ArrayBuffer(str.length);
+                    const bufView = new Uint8Array(buf);
+                    for (let i = 0, strLen = str.length; i < strLen; i++) {
+                        bufView[i] = str.charCodeAt(i);
+                    }
+                    return buf;
+                }
+
+                const encodedHeader = base64UrlEncode(utf8Encode(JSON.stringify(header2)));
+                const encodedPayload = base64UrlEncode(utf8Encode(JSON.stringify(payload)));
+                const data = utf8Encode(encodedHeader + "." + encodedPayload);
+
+                crypto.subtle.sign({
+                    name: "RSASSA-PKCS1-v1_5"
+                },
+                    privateKey, // The private key for signing
+                    data).then(function (signature) {
+                    console.log(signature);
+                    const token2 = encodedHeader + "." + encodedPayload + "." + base64UrlEncode(signature);
+                    console.log(token2);
+
+                });
 
                 const token = jsonwebtoken2.sign(payload, cybotixkey, {
                         algorithm: 'RS256',
@@ -347,6 +498,8 @@ const sub =    base64encode(JSON.stringify(subject));
                         }
                     });
                 console.log("platform_token");
+                console.log(token);
+
                 console.log(token);
 
                 // Splitting the JWT to get the header, payload, and signature
@@ -367,7 +520,182 @@ const sub =    base64encode(JSON.stringify(subject));
                     decodedHeader: decodedHeader,
                     parsedPayload: parsedPayload,
                     signature: signature,
-                    publicKey: config.platformtoken_signature_validation_key
+                    publicKey: config.signature_validation_key
+                });
+
+                //var page = '';
+
+                // res.send(`Generated JWT: ${token}`);
+            } else {
+                return res.status(400).send("Missing name or public key.");
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    });
+
+    app.post('/gui_user_create_platform_token3', (req, res) => {
+        console.log('/gui_user_create_platform_token');
+        console.log(req.method);
+        console.log(req.rawHeaders);
+        console.log("\n\nreq.body");
+        console.log(req.body);
+        console.log("\n\nreq.body.publicKey");
+        console.log(req.body.publicKey);
+
+        try {
+            function isValidNameInput(input) {
+                const name_regex = /^[A-Za-z0-9,.\- ]{1,50}$/;
+
+                return name_regex.test(input);
+            }
+
+            function isValidPEMInput(input) {
+
+                const pem_regex = /^[A-Za-z0-9\/\r\n\- \+=]{80,4000}$/;
+                return pem_regex.test(input);
+            }
+
+            console.log("1.1");
+            console.log(isValidNameInput(req.body.name));
+            console.log(isValidPEMInput(req.body.publicKey));
+            if (isValidNameInput(req.body.name) && isValidPEMInput(req.body.publicKey)) {
+                console.log("1.2");
+
+                // these two values should be know from the authentication that the customer goes through to get to this point
+                const subject_name = req.body.name;
+                const subject_id = uuidv4();
+                console.log("subject_name: " + subject_name);
+                console.log("subject_id: " + subject_id);
+                const subject = {
+                    name: subject_name,
+                    id: subject_id
+                };
+
+                const sub = base64encode(JSON.stringify(subject));
+
+                const publicKey = req.body.publicKey;
+
+                if (!subject || !publicKey) {
+                    return res.status(400).send("Missing name or public key.");
+                }
+
+                const payload = {
+                    version: "1.0", // Version of the token
+                    iss: issuer,
+                    sub: sub, // subject of the token
+                    aud: default_audience, // Audience of the token
+                    key: [publicKey], // x5c expects an array of certificate strings. Here we provide only the public key.
+                    jti: uuidv4(), // unique identifier for the token
+                    iat: Math.floor(Date.now() / 1000), // Current timestamp
+                    nbf: Math.floor(Date.now() / 1000), // Current timestamp
+                    exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days from now
+                };
+                //const cybotixkey = fs.readFileSync(config.signing_key);
+                // console.log("cybotixkey");
+                // console.log(cybotixkey);
+                log.debug(payload);
+
+                function base64StringToArrayBuffer(b64str) {
+                    var byteStr = atob(b64str)
+                        var bytes = new Uint8Array(byteStr.length)
+                        for (var i = 0; i < byteStr.length; i++) {
+                            bytes[i] = byteStr.charCodeAt(i)
+                        }
+                        return bytes.buffer
+                }
+                function convertPemToBinary(pem) {
+                    var lines = pem.split('\n')
+                        var encoded = ''
+                        for (var i = 0; i < lines.length; i++) {
+                            if (lines[i].trim().length > 0 &&
+                                lines[i].indexOf('-BEGIN RSA PRIVATE KEY-') < 0 &&
+                                lines[i].indexOf('-BEGIN RSA PUBLIC KEY-') < 0 &&
+                                lines[i].indexOf('-END RSA PRIVATE KEY-') < 0 &&
+                                lines[i].indexOf('-END RSA PUBLIC KEY-') < 0 &&
+                                lines[i].indexOf('-BEGIN PRIVATE KEY-') < 0 &&
+                                lines[i].indexOf('-BEGIN PUBLIC KEY-') < 0 &&
+                                lines[i].indexOf('-END PRIVATE KEY-') < 0 &&
+                                lines[i].indexOf('-END PUBLIC KEY-') < 0) {
+                                encoded += lines[i].trim()
+                            }
+                        }
+                        return base64StringToArrayBuffer(encoded)
+                }
+
+                function importPublicKey(pemKey) {
+                    return new Promise(function (resolve) {
+                        var importer = crypto.subtle.importKey("spki", convertPemToBinary(pemKey), signAlgorithm, true, ["verify"])
+                            importer.then(function (key) {
+                                resolve(key)
+                            })
+                    })
+                }
+
+                function importPrivateKey(pemKey) {
+                    return new Promise(function (resolve) {
+                        var importer = crypto.subtle.importKey("pkcs8", convertPemToBinary(pemKey), signAlgorithm, true, ["sign"])
+                            importer.then(function (key) {
+                                resolve(key)
+                            })
+                    })
+                }
+
+                const jwtheader = {
+                    alg: 'RS256',
+                    typ: 'JWT'
+                };
+                console.log(jwtheader);
+                console.log(JSON.stringify(jwtheader));
+                const jwtheader_b64 = base64encode(JSON.stringify(jwtheader));
+                console.log(jwtheader_b64);
+
+                const privatekeyPEM = fs.readFileSync(config.platformtoken_signing_key);
+                console.log(privatekeyPEM);
+                console.log("crypto.subtle");
+                console.log(crypto.subtle);
+
+                const jwtpayload = {
+                    "name": "test",
+                    "publicKey": "publickeyPEM"
+                }
+                console.log(JSON.stringify(jwtpayload));
+                const jwtpayload_b64 = base64encode(JSON.stringify(jwtpayload));
+                console.log(jwtpayload_b64);
+                console.log(jwtpayload);
+                const toSignJwtData = jwtheader_b64 + "." + jwtpayload_b64;
+                console.log("toSignData: " + toSignJwtData);
+                importPrivateKey(privatekeyPEM).then(function (key) {
+                    console.log(key);
+                    signData(key, toSignJwtData).then(function (jwtSignature) {
+                        console.log(jwtSignature);
+                        const jwtSignature_b64 = arrayBufferToBase64(jwtSignature);
+                        console.log(jwtSignature_b64);
+                        const jwt = urlEncodeBase64data(toSignJwtData + "." + jwtSignature_b64);
+                        console.log(jwt);
+
+                        // Splitting the JWT to get the header, payload, and signature
+                        const[header, load, signature] = token.split('.');
+
+                        // Base64-decoding the header and payload for display
+                        const decodedHeader = Buffer.from(header, 'base64').toString();
+                        const decodedPayload = Buffer.from(load, 'base64').toString();
+                        console.log("render");
+
+                        const parsedPayload = JSON.parse(decodedPayload);
+
+                        console.log("parsedPayload");
+                        console.log(parsedPayload);
+
+                        res.render('display_platformtoken', {
+                            token: jwt,
+                            decodedHeader: JSON.stringify(jwtheader),
+                            parsedPayload: parsedPayload,
+                            signature: signature,
+                            publicKey: config.signature_validation_key
+                        });
+
+                    })
                 });
 
                 //var page = '';
@@ -384,7 +712,16 @@ const sub =    base64encode(JSON.stringify(subject));
 
 }
 
+function base64UrlEncode(str) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
 
+function utf8Encode(str) {
+    return new TextEncoder().encode(str);
+}
 
 function getValidatedPlatformTokenPayload(rawPlatformToken) {
     try {
@@ -408,12 +745,12 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
             try {
                 console.debug("isPlatformtokenSignatureValid");
                 console.debug("isPlatformtokenSignatureValid, validating: " + token);
-                const cybotixPublicKey = config.platformtoken_signature_validation_key;
+                const cybotixPublicKey = config.signature_validation_key;
                 console.debug("isPlatformtokenSignatureValid, using: " + cybotixPublicKey);
                 // Verify the token
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, cybotixPublicKey, {
-                        algorithms: ['RS256']
+                        algorithms: ['ES256']
                     });
                 console.log("decoded");
                 console.log(decoded);
@@ -427,16 +764,15 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
         function isPlatformTokenPayloadDataValid(platform_token_payload) {
             console.log("isPlatformTokenPayloadDataValid");
             // check platform token issue and audience
-            console.log("config.platform_tokens.accepted_audiences");
-            console.log(config.platform_tokens.accepted_audiences);
-            console.log(config.platform_tokens.accepted_issuers);
+            console.log(accepted_audiences);
+            console.log(accepted_issuers);
             console.log(platform_token_payload);
 
             console.log("iss: " + platform_token_payload.iss);
-            console.log("iss accept: " + (platform_token_payload.iss in config.platform_tokens.accepted_issuers));
+            console.log("iss accept: " + (platform_token_payload.iss in accepted_issuers));
             console.log("sub: " + platform_token_payload.sub);
             console.log("aud: " + platform_token_payload.aud);
-            console.log("aud accept: " + (platform_token_payload.aud in config.platform_tokens.accepted_audiences));
+            console.log("aud accept: " + (platform_token_payload.aud in accepted_audiences));
             const now = Math.floor(Date.now() / 1000);
             console.log("now: " + now);
 
@@ -445,8 +781,8 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
             console.log("nbf: " + platform_token_payload.nbf);
             console.log("nbf accept: " + (now >= platform_token_payload.nbf));
 
-            if (platform_token_payload.iss in config.platform_tokens.accepted_issuers &&
-                platform_token_payload.aud in config.platform_tokens.accepted_audiences &&
+            if (platform_token_payload.iss in accepted_issuers &&
+                platform_token_payload.aud in accepted_audiences &&
                 now <= platform_token_payload.exp &&
                 now >= platform_token_payload.nbf) {
                 return true;
@@ -489,7 +825,6 @@ function getValidatedPlatformTokenPayload(rawPlatformToken) {
         return false;
     }
 }
-
 
 function inserttokenuuid(uuid, expiretime, type) {
 
@@ -560,22 +895,20 @@ function create_dataaccess_token(rawPlatformToken, rawDataRequest, installationU
     console.log("## create_dataaccess_token");
     console.log("rawDataRequest(decoded): " + rawDataRequest);
     //const parts = rawPlatformToken.replace(/-/g, '+').replace(/_/g, '/').split('.');
-   // if (parts.length !== 3) {
-        //throw new Error('Invalid token format');
-   //     console.log('Invalid token format');
-   // }
+    // if (parts.length !== 3) {
+    //throw new Error('Invalid token format');
+    //     console.log('Invalid token format');
+    // }
     //console.log("payload(raw): " + parts[1]);
     //const payload_raw = parts[1];
     //const payload = Buffer.from(payload_raw, 'base64').toString('utf8');
-   // console.log("payload(decoded): ");
-   // console.log(payload);
+    // console.log("payload(decoded): ");
+    // console.log(payload);
 
     platformTokenPayload = getValidatedPlatformTokenPayload(rawPlatformToken);
     //platformTokenPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
     //console.log(isPlatformTokenPayloadDataValid(platformTokenPayload));
     // check if the platform token is valid
-console.log("platformTokenPayload");
-console.log(platformTokenPayload);
 
 
     // check if the platform token has been revoked
@@ -600,7 +933,6 @@ console.log(platformTokenPayload);
     if (userid) {
         data_subject.userid = "user";
     }
-    
 
     // lookup existing data agreements to find the duration time for this access token
     // the agreemant especifiesnot only the scope of the data that may be accessed.
@@ -663,7 +995,7 @@ console.log(platformTokenPayload);
         exp: expiration,
         grant: Buffer.from(JSON.stringify(data_grant)).toString('base64')
     };
-    const cybotixkey = fs.readFileSync(config.platformtoken_signing_key);
+    const cybotixkey = fs.readFileSync(config.signing_key);
     console.log("cybotixkey");
 
     console.log("" + platformTokenPayload.sub);
@@ -679,10 +1011,10 @@ console.log(platformTokenPayload);
     //console.log(token_payload_enc);
 
     token = jsonwebtoken2.sign(dataaccess_token_payload, cybotixkey, {
-            algorithm: 'RS256',
+            algorithm: 'ES256',
             header: {
                 typ: "JWT",
-                alg: "RS256"
+                alg: "ES256"
             }
         });
     console.log("data_access_grant_token");
@@ -694,8 +1026,7 @@ console.log(platformTokenPayload);
 
 function base64decode(data) {
     return atob(data);
-  }
-
+}
 
 function base64encode(str) {
     return btoa(str);
