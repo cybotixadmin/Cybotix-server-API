@@ -2,6 +2,7 @@ const express = require('express');
 const Ajv = require('ajv');
 const path = require('path');
 const fs = require('fs');
+
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
 // Read the configuration file once and store the data in memory
@@ -43,7 +44,6 @@ const formidable = require("formidable");
 
 
 
-
 //const multer = require('multer');
 //const storage = multer.memoryStorage();  // Store the file in memory
 //const upload = multer({ storage: storage });
@@ -77,12 +77,16 @@ app.delete('/products/:id', cors(), function (req, res, next) {
   res.json({msg: 'This is CORS-enabled for all origins!'})
 });
 
+console.log(process.env.RDS_USER);
+//console.log(process.env.RDS_PWD);
+console.log(process.env.RDS_HOST);
+console.log(process.env.RDS_PORT);
 
 var connection = mysql.createConnection({
-  host: config.database.host,
-  port: config.database.port,
-  user: config.database.user,
-  password: config.database.password,
+  host: process.env.RDS_HOST,
+  port:process.env.RDS_PORT,
+  user: process.env.RDS_USER,
+  password: process.env.RDS_PWD,
 });
 
 

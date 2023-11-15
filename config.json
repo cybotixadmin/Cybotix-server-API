@@ -2,13 +2,12 @@
     "environment": "development",
     "appname": "api-dev",
     "database": {
-        "host": "REDACTED",
-        "port": "3306",
-        "user": "sqluser",
-        "password": "REDACTED",
         "database_name": "CybotixDB",
         "agreements_table": "CybotixDB.data_agreements_tb",
-        "clickdata_table": "CybotixDB.clickdata_tb"
+        "clickdata_table": "CybotixDB.clickdata_tb",
+        "platformtoken_table": "CybotixDB.data_platformtoken_tb",
+        "dataaccesstoken_table": "CybotixDB.data_accesstoken_tb",
+        "transaction_table": "CybotixDB.transaction_tb"
     },
     "platform_tokens": {
     "accepted_audiences": {
@@ -41,7 +40,6 @@
     "data_access_token_audience": {
         "clickstreamdata_location": "https://api-dev.cybotix.no/data"
     },
-    "platformtoken_signing_key": "./keys/cybotix.platformtoken.privatekey.pem",
     "platformtoken_signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy3Z5wJ/CelzVSbFj2Kiq\nS3IrKvBv5tE5ZJyegV1a4kAaRQTnlAdy6GBHD36Ep3l7VKiXgxMlCvLopeIUJtni\ndkH+YuMtwBWtbs9q9xoXCGf5m/YH+ZXF6b5QolIhYkduZMC8F0ZSKBJt+8ATMTX8\nHbzeq43u8rHi2KHjsRQFDi88Z6WtKTT31MiAwE+WrwjgfFjtSqkQFbgM8LnTQ1Iv\n4v8sSYzp2kN2PEn28P2GR8xiLTDEhdswoyL44z6R7OxejIm1UZGz2mp40YH/240u\nzAE5hie/F5eUqSASZDT1CHQrx0Edf4t2wHYZ/wXU+BIEhXWjckk9V7GPNwXh+AZJ\newIDAQAB\n-----END PUBLIC KEY-----\n",
     "dataaccesstoken_signature_validation_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy3Z5wJ/CelzVSbFj2Kiq\nS3IrKvBv5tE5ZJyegV1a4kAaRQTnlAdy6GBHD36Ep3l7VKiXgxMlCvLopeIUJtni\ndkH+YuMtwBWtbs9q9xoXCGf5m/YH+ZXF6b5QolIhYkduZMC8F0ZSKBJt+8ATMTX8\nHbzeq43u8rHi2KHjsRQFDi88Z6WtKTT31MiAwE+WrwjgfFjtSqkQFbgM8LnTQ1Iv\n4v8sSYzp2kN2PEn28P2GR8xiLTDEhdswoyL44z6R7OxejIm1UZGz2mp40YH/240u\nzAE5hie/F5eUqSASZDT1CHQrx0Edf4t2wHYZ/wXU+BIEhXWjckk9V7GPNwXh+AZJ\newIDAQAB\n-----END PUBLIC KEY-----\n"
 

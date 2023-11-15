@@ -2,7 +2,7 @@ const Ajv = require('ajv');
 const express = require('express');
 const fs = require('fs');
 const jsonwebtoken = require('jsonwebtoken');
-const jsonwebtoken2 = require('jsonwebtoken');
+const jsonwebtoken = require('jsonwebtoken');
 const crypto = require('crypto');
 const {
     v1: uuidv1,
@@ -322,7 +322,7 @@ const sub =    base64encode(JSON.stringify(subject));
                 }
 
                 const payload = {
-                    version: "1.0", // Version of the token
+                    ver: "1.0", // Version of the token
                     iss: issuer,
                     sub: sub, // subject of the token
                     aud: default_audience, // Audience of the token
@@ -332,14 +332,14 @@ const sub =    base64encode(JSON.stringify(subject));
                     nbf: Math.floor(Date.now() / 1000), // Current timestamp
                     exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days from now
                 };
-                 const cybotixkey = fs.readFileSync(config.platformtoken_signing_key);
-                //const cybotixkey = fs.readFileSync("./keys/cybotix.private_key.pem");
 
-                console.log("cybotixkey");
-                console.log(cybotixkey);
+            
+               
+                const cybotixkey = concatBuffersWithDelimiter(process.env.PLATTFORMTOKEN_SIGNING_KEY);
+                              
                 log.debug(payload);
 
-                const token = jsonwebtoken2.sign(payload, cybotixkey, {
+                const token = jsonwebtoken.sign(payload, cybotixkey, {
                         algorithm: 'RS256',
                         header: {
                             typ: "JWT",
@@ -384,6 +384,41 @@ const sub =    base64encode(JSON.stringify(subject));
 
 }
 
+
+
+function concatBuffersWithDelimiter(inputString) {
+    // Split the string on "\n"
+    const parts = inputString.split("\\n");
+ 
+    // Convert each part to a Buffer and store in an array
+    const buffers = parts.map(part => Buffer.from(part));
+    // ASCII 10 (newline) as a Buffer
+    const delimiter = Buffer.from([10]);
+    // Concatenate the buffers with the ASCII 10 delimiter
+    let concatenatedBuffer = Buffer.alloc(0);
+    for (let i = 0; i < buffers.length; i++) {
+        concatenatedBuffer = Buffer.concat(
+            [concatenatedBuffer, buffers[i], ...(i < buffers.length - 1 ? [delimiter] : [])]
+        );
+    }
+    return concatenatedBuffer;
+}
+
+
+function stringToArrayBuffer(str) {
+    const encoder = new TextEncoder();
+    const uint8Array = encoder.encode(str);
+    return uint8Array.buffer;
+}
+
+function str2ab(str) {
+    var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+    var bufView = new Uint16Array(buf);
+    for (var i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i);
+    }
+    return buf;
+}
 
 
 function getValidatedPlatformTokenPayload(rawPlatformToken) {
@@ -529,15 +564,15 @@ function inserttokenuuid(uuid, expiretime, type) {
 
 function isPlatformTokenPayloadDataValid(platform_token_payload) {
     // check platform token issue and audience
-    console.log(accepted_audiences);
-    console.log(accepted_issuers);
+    console.log(config.platform_tokens.accepted_audiences);
+    console.log(config.platform_tokens.accepted_issuers);
     console.log(platform_token_payload);
 
     console.log("iss: " + platform_token_payload.iss);
-    console.log("iss accept: " + (platform_token_payload.iss in accepted_issuers));
+    console.log("iss accept: " + (platform_token_payload.iss in config.platform_tokens.accepted_issuers));
     console.log("sub: " + platform_token_payload.sub);
     console.log("aud: " + platform_token_payload.aud);
-    console.log("aud accept: " + (platform_token_payload.aud in accepted_audiences));
+    console.log("aud accept: " + (platform_token_payload.aud in config.platform_tokens.accepted_audiences));
     const now = Math.floor(Date.now() / 1000);
     console.log("now: " + now);
 
@@ -546,8 +581,8 @@ function isPlatformTokenPayloadDataValid(platform_token_payload) {
     console.log("nbf: " + platform_token_payload.nbf);
     console.log("nbf accept: " + (now >= platform_token_payload.nbf));
 
-    if (platform_token_payload.iss in accepted_issuers &&
-        platform_token_payload.aud in accepted_audiences &&
+    if (platform_token_payload.iss in config.platform_tokens.accepted_issuers &&
+        platform_token_payload.aud in config.platform_tokens.accepted_audiences &&
         now <= platform_token_payload.exp &&
         now >= platform_token_payload.nbf) {
         return true;
@@ -653,7 +688,7 @@ console.log(platformTokenPayload);
     console.log("4.4.7 ");
     var token;
     const dataaccess_token_payload = {
-        version: "1.0", // Version of the token
+        ver: "1.0", // Version of the token
         iss: issuer,
         sub: platformTokenPayload.sub, // who the token belongs to
         aud: config.data_access_token_audience.clickstreamdata_location, // Audience of the token
@@ -663,13 +698,7 @@ console.log(platformTokenPayload);
         exp: expiration,
         grant: Buffer.from(JSON.stringify(data_grant)).toString('base64')
     };
-    const cybotixkey = fs.readFileSync(config.platformtoken_signing_key);
-    console.log("cybotixkey");
 
-    console.log("" + platformTokenPayload.sub);
-    console.log("" + platformTokenPayload.sub);
-
-    console.log(cybotixkey);
     console.log("platformTokenPayload.    sub: " + platformTokenPayload.sub);
     console.log("dataaccess_token_payload.sub: " + dataaccess_token_payload.sub);
     console.log("6.1.1");
@@ -677,8 +706,9 @@ console.log(platformTokenPayload);
     // const token_payload_enc = str2base64((JSON.stringify(token_payload)));
     // console.log("token_payload, encoded");
     //console.log(token_payload_enc);
-
-    token = jsonwebtoken2.sign(dataaccess_token_payload, cybotixkey, {
+    const cybotixkey = concatBuffersWithDelimiter(process.env.PLATTFORMTOKEN_SIGNING_KEY);
+               
+    token = jsonwebtoken.sign(dataaccess_token_payload, cybotixkey, {
             algorithm: 'RS256',
             header: {
                 typ: "JWT",
