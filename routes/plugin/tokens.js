@@ -2,7 +2,6 @@ const Ajv = require('ajv');
 const express = require('express');
 const fs = require('fs');
 const jsonwebtoken = require('jsonwebtoken');
-const jsonwebtoken = require('jsonwebtoken');
 const crypto = require('crypto');
 const {
     v1: uuidv1,

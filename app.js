@@ -38,7 +38,7 @@ const log = bunyan.createLogger({
 
 log.info('Cybotix API App');
 const njwt = require("njwt");
-const jsonwebtoken = require('jsonwebtoken');
+//const jsonwebtoken = require('jsonwebtoken');
 const secureRandom = require("secure-random");
 const formidable = require("formidable");
 
@@ -77,10 +77,15 @@ app.delete('/products/:id', cors(), function (req, res, next) {
   res.json({msg: 'This is CORS-enabled for all origins!'})
 });
 
-console.log(process.env.RDS_USER);
+log.info(process.env.RDS_USER);
+console.debug(process.env.RDS_USER);
 //console.log(process.env.RDS_PWD);
-console.log(process.env.RDS_HOST);
-console.log(process.env.RDS_PORT);
+log.info(process.env.RDS_HOST);
+console.debug(process.env.RDS_HOST);
+log.info(process.env.RDS_PORT);
+//console.log(process.env.PLATTFORMTOKEN_SIGNING_KEY);
+
+
 
 var connection = mysql.createConnection({
   host: process.env.RDS_HOST,

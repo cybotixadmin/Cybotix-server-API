@@ -56,6 +56,12 @@ module.exports = function (app, connection) {
                 "minLength": 8,
                 "maxLength": 30
             },
+            expiration: {
+                type: 'string',
+                "pattern": "^[A-Za-z0-9\-_\. :]{8,30}$",
+                "minLength": 8,
+                "maxLength": 30
+            },
             url: {
                 type: 'string',
                 "minLength": 1,
@@ -256,14 +262,15 @@ module.exports = function (app, connection) {
             }
             
 var local_time = req.body.local_time;
+var expiration = req.body.expiration;
 
             // generate unique note id
             const linkid = crypto.randomUUID()
 
                 const utc = new Date().toISOString();
-            const sql = 'INSERT INTO ' + clickdata_table + ' (environment, url, browserid,linkid, utc, local_time) VALUES ("' + environment + '", "' + req.body.url + '", "' + installationUniqueId + '", "' + linkid + '", now(), "'+local_time.replace(/\.[0-9]{3}Z$/,"") +'" )';
+            const sql = 'INSERT INTO ' + clickdata_table + ' (environment, url, browserid,linkid, utc, local_time, expiration) VALUES ("' + environment + '", "' + req.body.url + '", "' + installationUniqueId + '", "' + linkid + '", now(), "'+local_time.replace(/\.[0-9]{3}Z$/,"") +'", "'+expiration.replace(/\.[0-9]{3}Z$/,"")+'" )';
 
-            console.log("SQL 1");
+            console.log("SQL 1.0.2");
             console.log(sql);
 
             connection.query(sql, function (err, result) {
@@ -362,7 +369,7 @@ var local_time = req.body.local_time;
             // TO BE IMPLEMENTED, using the option regexp pattern
             // at present all data is returned
             // Read from database
-            const sql = 'SELECT linkid, utc, local_time, url, expiration FROM ' + clickdata_table + ' WHERE environment="' + environment + '" AND expiration >=now() AND browserid = "' + installationUniqueId + '" ';
+            const sql = 'SELECT linkid, utc, local_time, url, expiration FROM ' + clickdata_table + ' WHERE environment="' + environment + '" AND ( expiration >=now() OR expiration IS NULL ) AND browserid = "' + installationUniqueId + '" ';
             log.info(sql);
             console.log(sql)
             connection.query(sql, installationUniqueId, (err, rows) => {
