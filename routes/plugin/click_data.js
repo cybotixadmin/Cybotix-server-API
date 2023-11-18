@@ -134,6 +134,21 @@ module.exports = function (app, connection) {
         required: ['linkid'],
     };
 
+    
+    const plugin_user_delete_expired_clickdata_json_schema = {
+        type: "object",
+        properties: {
+            local_time: {
+                type: 'string',
+                "pattern": "^[A-Za-z0-9\-\_\. :]{10,30}$",
+                "minLength": 1,
+                "maxLength": 30
+            }
+        },
+        required: ['local_time'],
+    };
+
+
     const ajv = new Ajv();
 
 
@@ -336,6 +351,103 @@ var expiration = req.body.expiration;
         });
     });
 
+
+    
+    app.get('/plugin_user_delete_all_clickdata', (req, res) => {
+        try {
+            var installationUniqueId = "";
+            try {
+                if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
+                    installationUniqueId = req.header("installationUniqueId");
+                    log.info("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+                } else {
+                    log.info("an invalid installationUniqueId found in header");
+                }
+            } catch (err) {
+                log.info(err);
+            }
+
+             // delete from database
+ const sql = "DELETE FROM " + clickdata_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' ";
+ console.log(sql);
+
+ connection.query(sql, function (err, result) {
+    connection.query(sql, function (err, result) {
+        if (err) {
+            console.debug(err);
+            return res.status(500).json({
+                error: 'Database error'
+            });
+        }
+
+        if (result.affectedRows > 0) {
+            log.info("affectedRows: " + result.affectedRows)
+            res.status(200).json('{"added:"' + result.affectedRows + "}");
+        } else {
+            res.status(404).json({});
+        }
+    });
+ });
+
+
+        } catch (err) {
+            console.log(err);
+            log.info(err);
+        }
+    });
+    app.post('/plugin_user_delete_expired_clickdata', (req, res) => {
+        try {
+            var installationUniqueId = "";
+            try {
+                if (regExpValidInstallationUniqueId.test(req.header("installationUniqueId"))) {
+                    installationUniqueId = req.header("installationUniqueId");
+                    log.info("a valid installationUniqueId found in header (" + installationUniqueId + ")");
+                } else {
+                    log.info("an invalid installationUniqueId found in header");
+                }
+            } catch (err) {
+                log.info(err);
+            }
+
+
+            
+   // Validate JSON against schema
+   const valid = ajv.validate(plugin_user_delete_expired_clickdata_json_schema, req.body);
+
+   if (!valid) {
+       return res.status(400).json({
+           error: 'Invalid data format'
+       });
+   }
+
+ // delete from database
+ const sql = "DELETE FROM " + clickdata_table + " WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND expiration < '" + req.body.local_time + "'";
+ console.log(sql);
+
+ connection.query(sql, function (err, result) {
+    connection.query(sql, function (err, result) {
+        if (err) {
+            console.debug(err);
+            return res.status(500).json({
+                error: 'Database error'
+            });
+        }
+
+        if (result.affectedRows > 0) {
+            log.info("affectedRows: " + result.affectedRows)
+            res.status(200).json('{"added:"' + result.affectedRows + "}");
+        } else {
+            res.status(404).json({});
+        }
+    });
+ });
+
+
+        } catch (err) {
+            console.log(err);
+            log.info(err);
+        }
+    });
     app.get('/plugin_user_get_all_clicks', (req, res) => {
         try {
             log.info(req.method);
@@ -360,11 +472,7 @@ var expiration = req.body.expiration;
                 log.info(err);
             }
 
-            if (!valid) {
-                return res.status(400).json({
-                    error: 'Invalid data format'
-                });
-            }
+           
 
             // TO BE IMPLEMENTED, using the option regexp pattern
             // at present all data is returned
