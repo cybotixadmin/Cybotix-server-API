@@ -39,6 +39,7 @@ const log = bunyan.createLogger({
             }
         ]
     });
+    
 module.exports = function (app, connection) {
 
     // JSON Schema

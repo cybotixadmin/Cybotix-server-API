@@ -510,7 +510,7 @@ const futureTimestamp = formatDate(futureDate);
             });
         }
 
-        // delete from database
+        // update in database
         const sql = 'UPDATE ' + agreements_table + " SET active='" + req.body.activestatus + "' WHERE environment='" + environment + "' AND browserid='" + installationUniqueId + "' AND agreementid='" + req.body.agreementid + "'";
         console.log(sql);
      
