@@ -11,7 +11,12 @@ lerna-debug.log*
 *.txt
 
 node_modules
+.terraform
+.aws
+.ssh
+/keys/
 
+.gitignore
 deployment
 
 message_formats.txt
