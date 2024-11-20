@@ -2,12 +2,12 @@
     "environment": "development",
     "appname": "api-dev",
     "database": {
-        "database_name": "CybotixDB",
-        "agreements_table": "CybotixDB.data_agreements_tb",
-        "clickdata_table": "CybotixDB.clickdata_tb",
-        "platformtoken_table": "CybotixDB.data_platformtoken_tb",
-        "dataaccesstoken_table": "CybotixDB.data_accesstoken_tb",
-        "transaction_table": "CybotixDB.transaction_tb"
+        "database_name": "YellowDB",
+        "agreements_table": "YellowDB.data_agreements_tb",
+        "clickdata_table": "YellowDB.clickdata_tb",
+        "platformtoken_table": "YellowDB.data_platformtoken_tb",
+        "dataaccesstoken_table": "YellowDB.data_accesstoken_tb",
+        "transaction_table": "YellowDB.transaction_tb"
     },
     "platform_tokens": {
     "accepted_audiences": {

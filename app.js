@@ -77,21 +77,28 @@ app.delete('/products/:id', cors(), function (req, res, next) {
   res.json({msg: 'This is CORS-enabled for all origins!'})
 });
 
-log.info(process.env.RDS_USER);
-console.debug(process.env.RDS_USER);
-//console.log(process.env.RDS_PWD);
-log.info(process.env.RDS_HOST);
-console.debug(process.env.RDS_HOST);
-log.info(process.env.RDS_PORT);
+log.info(process.env.CYDB_USER);
+console.debug(process.env.CYDB_USER);
+//console.log(process.env.CYDB_PWD);
+log.info(process.env.CYDB_HOST);
+console.debug(process.env.CYDB_HOST);
+log.info(process.env.CYDB_PORT);
 //console.log(process.env.PLATTFORMTOKEN_SIGNING_KEY);
+log.info(process.env.CYDB_NAME);
+console.debug(process.env.CYDB_NAME);
+
+log.info(process.env.CYDB_HOST);
+console.debug(process.env.CYDB_HOST);
+
 
 
 
 var connection = mysql.createConnection({
-  host: process.env.RDS_HOST,
-  port:process.env.RDS_PORT,
-  user: process.env.RDS_USER,
-  password: process.env.RDS_PWD,
+  host: process.env.CYDB_HOST,
+  port:process.env.CYDB_PORT,
+  database: process.env.CYDB_NAME,
+  user: process.env.CYDB_USER,
+  password: process.env.CYDB_PWD,
 });
 
 
@@ -101,6 +108,8 @@ require('./routes/plugin/click_data')(app,connection);
 require('./routes/plugin/data_agreements')(app,connection);
 require('./routes/plugin/tokens')(app,connection);
 require('./routes/data/click_history')(app,connection);
+
+require('./routes/plugin/consents')(app,connection);
 
 
 // Serve static files from the "public" directory
